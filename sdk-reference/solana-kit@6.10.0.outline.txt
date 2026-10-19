@@ -1,0 +1,89 @@
+### @solana/kit@6.10.0
+### from: node_modules/.pnpm/@solana+kit@6.10.0_typescript@5.9.3/node_modules/@solana/kit
+### type files found: 15
+
+### legal import paths
+{
+  ".": {
+    "edge-light": {
+      "import": "./dist/index.node.mjs",
+      "require": "./dist/index.node.cjs"
+    },
+    "workerd": {
+      "import": "./dist/index.node.mjs",
+      "require": "./dist/index.node.cjs"
+    },
+    "browser": {
+      "import": "./dist/index.browser.mjs",
+      "require": "./dist/index.browser.cjs"
+    },
+    "node": {
+      "import": "./dist/index.node.mjs",
+      "require": "./dist/index.node.cjs"
+    },
+    "react-native": "./dist/index.native.mjs",
+    "types": "./dist/types/index.d.ts"
+  },
+  "./program-client-core": {
+    "edge-light": {
+      "import": "./dist/program-client-core.node.mjs",
+      "require": "./dist/program-client-core.node.cjs"
+    },
+    "workerd": {
+      "import": "./dist/program-client-core.node.mjs",
+      "require": "./dist/program-client-core.node.cjs"
+    },
+    "browser": {
+      "import": "./dist/program-client-core.browser.mjs",
+      "require": "./dist/program-client-core.browser.cjs"
+    },
+    "node": {
+      "import": "./dist/program-client-core.node.mjs",
+      "require": "./dist/program-client-core.node.cjs"
+    },
+    "react-native": "./dist/program-client-core.native.mjs",
+    "types": "./dist/types/program-client-core.d.ts"
+  }
+}
+
+### exported symbols
+dist/types/airdrop.d.ts:40:export declare function airdropFactory({ rpc, rpcSubscriptions }: AirdropFactoryConfig<'devnet'>): AirdropFunction;
+dist/types/airdrop.d.ts:41:export declare function airdropFactory({ rpc, rpcSubscriptions }: AirdropFactoryConfig<'mainnet'>): AirdropFunction;
+dist/types/airdrop.d.ts:42:export declare function airdropFactory({ rpc, rpcSubscriptions }: AirdropFactoryConfig<'testnet'>): AirdropFunction;
+dist/types/airdrop.d.ts:43:export {};
+dist/types/airdrop-internal.d.ts:14:export declare function requestAndConfirmAirdrop_INTERNAL_ONLY_DO_NOT_EXPORT({ abortSignal, commitment, confirmSignatureOnlyTransaction, lamports, recipientAddress, rpc, }: RequestAndConfirmAirdropConfig): Promise<Signature>;
+dist/types/airdrop-internal.d.ts:15:export {};
+dist/types/compute-unit-limit-estimation.d.ts:37:export declare function estimateComputeUnitLimitFactory({ rpc, }: EstimateComputeUnitLimitFactoryConfig): EstimateComputeUnitLimitFunction;
+dist/types/compute-unit-limit-estimation.d.ts:64:export declare function estimateAndSetComputeUnitLimitFactory(estimateComputeUnitLimit: EstimateComputeUnitLimitFunction): <TTransactionMessage extends TransactionMessage & TransactionMessageWithFeePayer>(transactionMessage: TTransactionMessage, config?: EstimateComputeUnitLimitConfig) => Promise<TTransactionMessage>;
+dist/types/compute-unit-limit-estimation.d.ts:88:export declare function fillTransactionMessageProvisoryComputeUnitLimit<TTransactionMessage extends TransactionMessage>(transactionMessage: TTransactionMessage): TTransactionMessage;
+dist/types/compute-unit-limit-estimation.d.ts:89:export {};
+dist/types/create-async-generator-with-initial-value-and-slot-tracking.d.ts:77:export declare function createAsyncGeneratorWithInitialValueAndSlotTracking<TRpcValue, TSubscriptionValue, TItem>({ abortSignal, rpcRequest, rpcValueMapper, rpcSubscriptionRequest, rpcSubscriptionValueMapper, }: CreateAsyncGeneratorWithInitialValueAndSlotTrackingConfig<TRpcValue, TSubscriptionValue, TItem>): AsyncGenerator<SolanaRpcResponse<TItem>>;
+dist/types/create-async-generator-with-initial-value-and-slot-tracking.d.ts:78:export {};
+dist/types/create-reactive-store-with-initial-value-and-slot-tracking.d.ts:16:export type CreateReactiveStoreWithInitialValueAndSlotTrackingConfig<TRpcValue, TSubscriptionValue, TItem> = Readonly<{
+dist/types/create-reactive-store-with-initial-value-and-slot-tracking.d.ts:101:export declare function createReactiveStoreWithInitialValueAndSlotTracking<TRpcValue, TSubscriptionValue, TItem>({ abortSignal, rpcRequest, rpcValueMapper, rpcSubscriptionRequest, rpcSubscriptionValueMapper, }: CreateReactiveStoreWithInitialValueAndSlotTrackingConfig<TRpcValue, TSubscriptionValue, TItem>): ReactiveStreamStore<SolanaRpcResponse<TItem>>;
+dist/types/decompile-transaction-message-fetching-lookup-tables.d.ts:16:export declare function decompileTransactionMessageFetchingLookupTables(compiledTransactionMessage: CompiledTransactionMessage & CompiledTransactionMessageWithLifetime, rpc: Rpc<GetMultipleAccountsApi>, config?: DecompileTransactionMessageFetchingLookupTablesConfig): Promise<TransactionMessage & TransactionMessageWithFeePayer & TransactionMessageWithLifetime>;
+dist/types/decompile-transaction-message-fetching-lookup-tables.d.ts:17:export {};
+dist/types/fetch-lookup-tables.d.ts:12:export declare function fetchAddressesForLookupTables(lookupTableAddresses: Address[], rpc: Rpc<GetMultipleAccountsApi>, config?: FetchAccountsConfig): Promise<AddressesByLookupTableAddress>;
+dist/types/get-minimum-balance-for-rent-exemption.d.ts:23:export declare function getMinimumBalanceForRentExemption(space: bigint): Lamports;
+dist/types/index.d.ts:19:export type * from '@solana/plugin-interfaces';
+dist/types/index.d.ts:39:export type { RpcRequest, RpcRequestTransformer, RpcResponse, RpcResponseData, RpcResponseTransformer, } from '@solana/rpc-spec-types';
+dist/types/index.d.ts:40:export { createRpcMessage } from '@solana/rpc-spec-types';
+dist/types/resource-limit-estimation.d.ts:20:export type ResourceLimitsEstimate<TTransactionMessage extends TransactionMessage> = TTransactionMessage extends {
+dist/types/resource-limit-estimation.d.ts:56:export declare function estimateResourceLimitsFactory({ rpc, }: EstimateResourceLimitsFactoryConfig): EstimateResourceLimitsFunction;
+dist/types/resource-limit-estimation.d.ts:88:export declare function estimateAndSetResourceLimitsFactory(estimateResourceLimits: EstimateResourceLimitsFunction): <TTransactionMessage extends TransactionMessage & TransactionMessageWithFeePayer>(transactionMessage: TTransactionMessage, config?: EstimateResourceLimitsConfig) => Promise<TTransactionMessage>;
+dist/types/resource-limit-estimation.d.ts:111:export declare function fillTransactionMessageProvisoryResourceLimits<TTransactionMessage extends TransactionMessage>(transactionMessage: TTransactionMessage): TTransactionMessage;
+dist/types/resource-limit-estimation.d.ts:112:export {};
+dist/types/send-and-confirm-durable-nonce-transaction.d.ts:49:export declare function sendAndConfirmDurableNonceTransactionFactory({ rpc, rpcSubscriptions, }: SendAndConfirmDurableNonceTransactionFactoryConfig<'devnet'>): SendAndConfirmDurableNonceTransactionFunction;
+dist/types/send-and-confirm-durable-nonce-transaction.d.ts:50:export declare function sendAndConfirmDurableNonceTransactionFactory({ rpc, rpcSubscriptions, }: SendAndConfirmDurableNonceTransactionFactoryConfig<'testnet'>): SendAndConfirmDurableNonceTransactionFunction;
+dist/types/send-and-confirm-durable-nonce-transaction.d.ts:51:export declare function sendAndConfirmDurableNonceTransactionFactory({ rpc, rpcSubscriptions, }: SendAndConfirmDurableNonceTransactionFactoryConfig<'mainnet'>): SendAndConfirmDurableNonceTransactionFunction;
+dist/types/send-and-confirm-durable-nonce-transaction.d.ts:52:export {};
+dist/types/send-and-confirm-transaction.d.ts:40:export declare function sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions, }: SendAndConfirmTransactionWithBlockhashLifetimeFactoryConfig<'devnet'>): SendAndConfirmTransactionWithBlockhashLifetimeFunction;
+dist/types/send-and-confirm-transaction.d.ts:41:export declare function sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions, }: SendAndConfirmTransactionWithBlockhashLifetimeFactoryConfig<'testnet'>): SendAndConfirmTransactionWithBlockhashLifetimeFunction;
+dist/types/send-and-confirm-transaction.d.ts:42:export declare function sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions, }: SendAndConfirmTransactionWithBlockhashLifetimeFactoryConfig<'mainnet'>): SendAndConfirmTransactionWithBlockhashLifetimeFunction;
+dist/types/send-and-confirm-transaction.d.ts:43:export {};
+dist/types/send-transaction-internal.d.ts:21:export declare function sendTransaction_INTERNAL_ONLY_DO_NOT_EXPORT({ abortSignal, commitment, rpc, transaction, ...sendTransactionConfig }: SendTransactionBaseConfig): Promise<Signature>;
+dist/types/send-transaction-internal.d.ts:22:export declare function sendAndConfirmDurableNonceTransaction_INTERNAL_ONLY_DO_NOT_EXPORT({ abortSignal, commitment, confirmDurableNonceTransaction, rpc, transaction, ...sendTransactionConfig }: SendAndConfirmDurableNonceTransactionConfig): Promise<Signature>;
+dist/types/send-transaction-internal.d.ts:23:export declare function sendAndConfirmTransactionWithBlockhashLifetime_INTERNAL_ONLY_DO_NOT_EXPORT({ abortSignal, commitment, confirmRecentTransaction, rpc, transaction, ...sendTransactionConfig }: SendAndConfirmTransactionWithBlockhashLifetimeConfig): Promise<Signature>;
+dist/types/send-transaction-internal.d.ts:24:export {};
+dist/types/send-transaction-without-confirming.d.ts:35:export declare function sendTransactionWithoutConfirmingFactory({ rpc, }: SendTransactionWithoutConfirmingFactoryConfig): SendTransactionWithoutConfirmingFunction;
+dist/types/send-transaction-without-confirming.d.ts:36:export {};

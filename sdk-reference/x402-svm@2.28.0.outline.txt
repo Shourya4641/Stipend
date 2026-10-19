@@ -1,0 +1,461 @@
+### @x402/svm@2.28.0
+### from: node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm
+### type files found: 42
+
+### legal import paths
+{
+  ".": {
+    "import": {
+      "types": "./dist/esm/index.d.mts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.js"
+    }
+  },
+  "./v1": {
+    "import": {
+      "types": "./dist/esm/v1/index.d.mts",
+      "default": "./dist/esm/v1/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/v1/index.d.ts",
+      "default": "./dist/cjs/v1/index.js"
+    }
+  },
+  "./exact/client": {
+    "import": {
+      "types": "./dist/esm/exact/client/index.d.mts",
+      "default": "./dist/esm/exact/client/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/exact/client/index.d.ts",
+      "default": "./dist/cjs/exact/client/index.js"
+    }
+  },
+  "./exact/server": {
+    "import": {
+      "types": "./dist/esm/exact/server/index.d.mts",
+      "default": "./dist/esm/exact/server/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/exact/server/index.d.ts",
+      "default": "./dist/cjs/exact/server/index.js"
+    }
+  },
+  "./exact/facilitator": {
+    "import": {
+      "types": "./dist/esm/exact/facilitator/index.d.mts",
+      "default": "./dist/esm/exact/facilitator/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/exact/facilitator/index.d.ts",
+      "default": "./dist/cjs/exact/facilitator/index.js"
+    }
+  },
+  "./exact/v1/client": {
+    "import": {
+      "types": "./dist/esm/exact/v1/client/index.d.mts",
+      "default": "./dist/esm/exact/v1/client/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/exact/v1/client/index.d.ts",
+      "default": "./dist/cjs/exact/v1/client/index.js"
+    }
+  },
+  "./exact/v1/facilitator": {
+    "import": {
+      "types": "./dist/esm/exact/v1/facilitator/index.d.mts",
+      "default": "./dist/esm/exact/v1/facilitator/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/exact/v1/facilitator/index.d.ts",
+      "default": "./dist/cjs/exact/v1/facilitator/index.js"
+    }
+  },
+  "./upto/client": {
+    "import": {
+      "types": "./dist/esm/upto/client/index.d.mts",
+      "default": "./dist/esm/upto/client/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/upto/client/index.d.ts",
+      "default": "./dist/cjs/upto/client/index.js"
+    }
+  },
+  "./upto/server": {
+    "import": {
+      "types": "./dist/esm/upto/server/index.d.mts",
+      "default": "./dist/esm/upto/server/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/upto/server/index.d.ts",
+      "default": "./dist/cjs/upto/server/index.js"
+    }
+  },
+  "./upto/facilitator": {
+    "import": {
+      "types": "./dist/esm/upto/facilitator/index.d.mts",
+      "default": "./dist/esm/upto/facilitator/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/upto/facilitator/index.d.ts",
+      "default": "./dist/cjs/upto/facilitator/index.js"
+    }
+  },
+  "./batch-settlement/client": {
+    "import": {
+      "types": "./dist/esm/batch-settlement/client/index.d.mts",
+      "default": "./dist/esm/batch-settlement/client/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/batch-settlement/client/index.d.ts",
+      "default": "./dist/cjs/batch-settlement/client/index.js"
+    }
+  },
+  "./batch-settlement/server": {
+    "import": {
+      "types": "./dist/esm/batch-settlement/server/index.d.mts",
+      "default": "./dist/esm/batch-settlement/server/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/batch-settlement/server/index.d.ts",
+      "default": "./dist/cjs/batch-settlement/server/index.js"
+    }
+  },
+  "./batch-settlement/facilitator": {
+    "import": {
+      "types": "./dist/esm/batch-settlement/facilitator/index.d.mts",
+      "default": "./dist/esm/batch-settlement/facilitator/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/batch-settlement/facilitator/index.d.ts",
+      "default": "./dist/cjs/batch-settlement/facilitator/index.js"
+    }
+  }
+}
+
+### exported symbols
+dist/cjs/batch-settlement/client/index.d.ts:11:declare function signBatchVoucher(signer: BatchClientSigner, voucher: {
+dist/cjs/batch-settlement/client/index.d.ts:16:declare class BatchChannelTracker {
+dist/cjs/batch-settlement/client/index.d.ts:80:declare function buildDepositPayload(args: BuildDepositArgs): Promise<BuiltDeposit>;
+dist/cjs/batch-settlement/client/index.d.ts:81:declare function buildRefundPayload(args: {
+dist/cjs/batch-settlement/client/index.d.ts:98:declare class NoBatchChannelToRefundError extends Error {
+dist/cjs/batch-settlement/client/index.d.ts:131:declare function probeBatchRequirements(url: string, fetchImpl: typeof fetch): Promise<{
+dist/cjs/batch-settlement/client/index.d.ts:152:declare function refundBatchChannel(build: RefundPayloadBuilder, url: string, options?: BatchRefundOptions): Promise<SettleResponse>;
+dist/cjs/batch-settlement/client/index.d.ts:170:declare const DEFAULT_SERVER_SIGNED_MAX_DEPOSIT: Money;
+dist/cjs/batch-settlement/client/index.d.ts:211:declare class UntrustedOperatorError extends Error {
+dist/cjs/batch-settlement/client/index.d.ts:227:declare function isServerSignedAccept(accept: PaymentRequirements): boolean;
+dist/cjs/batch-settlement/client/index.d.ts:305:declare class BatchSvmScheme implements SchemeNetworkClient {
+dist/cjs/batch-settlement/client/index.d.ts:442:export { BatchChannelTracker, type BatchClientSigner, type BatchRefundOptions, type BatchServerSignedChannelsPolicy, type BatchSvmClientConfig, BatchSvmScheme, type BuildDepositArgs, type BuiltDeposit, DEFAULT_SERVER_SIGNED_MAX_DEPOSIT, NoBatchChannelToRefundError, type RefundPayloadOptions, type ServerSignedChannelsAsset, UntrustedOperatorError, buildDepositPayload, buildRefundPayload, isServerSignedAccept, probeBatchRequirements, refundBatchChannel, signBatchVoucher };
+dist/cjs/batch-settlement/facilitator/index.d.ts:5:export { c as BatchChannelRecord, D as DEFAULT_ABANDON_GRACE_SECS, d as DEFAULT_MAX_CLOSES_PER_RUN, m as DEFAULT_MAX_IDLE_SECS, e as DEFAULT_MAX_RECLAIMS_PER_TX, f as DEFAULT_MAX_TXS_PER_RUN, g as DEFAULT_MAX_TXS_PER_SIGNER, I as InMemoryBatchChannelStorage, I as InMemoryPaymentChannelStorage, M as MAX_SAFE_RECLAIMS_PER_TX, b as PaymentChannelOpenWrite, c as PaymentChannelRecord, R as RentCleanupCloseResult, h as RentCleanupOptions, i as RentCleanupReclaimResult, j as RentCleanupStartConfig, k as RentDiscoveryOptions, l as RentDiscoveryResult } from '../../rentCleanup-D91n7iIF.js';
+dist/cjs/batch-settlement/facilitator/index.d.ts:36:declare class BatchSvmRentCleanupManager extends PaymentChannelRentCleanupManager {
+dist/cjs/batch-settlement/facilitator/index.d.ts:53:declare class InMemoryBatchPendingSettlementStore implements BatchPendingSettlementStore {
+dist/cjs/batch-settlement/facilitator/index.d.ts:155:declare class BatchSvmScheme implements SchemeNetworkFacilitator {
+dist/cjs/batch-settlement/facilitator/index.d.ts:314:declare const MAX_CHANNELS_PER_SETTLE_TX = 4;
+dist/cjs/batch-settlement/facilitator/index.d.ts:322:declare function createReceiverBindingHistoryReader(rpcUrlByNetwork?: Partial<Record<string, string>>): BatchReceiverBindingHistoryReader;
+dist/cjs/batch-settlement/facilitator/index.d.ts:324:export { PaymentChannelStorage as BatchChannelStorage, type BatchDelegatedReceiverAuth, type BatchDelegatedSettleContext, type BatchPendingSettlementStore, type BatchReceiverBindingHistoryReader, type BatchReceiverBindingHistorySignature, type BatchSvmFacilitatorConfig, BatchSvmRentCleanupManager, type BatchSvmRentCleanupManagerConfig, BatchSvmScheme, InMemoryBatchPendingSettlementStore, MAX_CHANNELS_PER_SETTLE_TX, PaymentChannelStorage, createReceiverBindingHistoryReader };
+dist/cjs/batch-settlement/server/index.d.ts:36:declare class MemoryBatchOperationStore implements BatchOperationStore {
+dist/cjs/batch-settlement/server/index.d.ts:249:declare class BatchChannelManager {
+dist/cjs/batch-settlement/server/index.d.ts:396:declare class BatchSvmScheme implements SchemeNetworkServer {
+dist/cjs/batch-settlement/server/index.d.ts:745:declare class MemoryChannelStore implements ChannelStore {
+dist/cjs/batch-settlement/server/index.d.ts:766:export { BatchChannelManager, type BatchChannelManagerConfig, type BatchOperation, type BatchOperationStore, BatchSvmScheme, type BatchSvmServerConfig, type ChannelState, type ChannelStore, type ClaimResult, MemoryBatchOperationStore, MemoryChannelStore, type RedemptionResult, type RedemptionSettler, type SealResult, type SettleResult };
+dist/cjs/defaultAssets-BxQwBgBJ.d.ts:7:declare const USDC_MAINNET_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+dist/cjs/defaultAssets-BxQwBgBJ.d.ts:8:declare const USDC_DEVNET_ADDRESS = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+dist/cjs/defaultAssets-BxQwBgBJ.d.ts:9:declare const USDC_TESTNET_ADDRESS = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+dist/cjs/defaultAssets-BxQwBgBJ.d.ts:11:declare const DEFAULT_ASSETS: DefaultAssetTable<SvmDefaultAsset>;
+dist/cjs/defaultAssets-BxQwBgBJ.d.ts:20:declare const getDefaultAsset: GetDefaultAsset<SvmDefaultAsset>;
+dist/cjs/defaultAssets-BxQwBgBJ.d.ts:28:declare const findDefaultAsset: FindDefaultAsset<SvmDefaultAsset>;
+dist/cjs/defaultAssets-BxQwBgBJ.d.ts:30:export { DEFAULT_ASSETS as D, type SvmDefaultAsset as S, USDC_MAINNET_ADDRESS as U, USDC_DEVNET_ADDRESS as a, USDC_TESTNET_ADDRESS as b, findDefaultAsset as f, getDefaultAsset as g };
+dist/cjs/discovery-BSPpSJoZ.d.ts:54:declare const CHANNEL_ACCOUNT_SIZE = 256n;
+dist/cjs/discovery-BSPpSJoZ.d.ts:56:declare const CHANNEL_RENT_PAYER_OFFSET = 216n;
+dist/cjs/discovery-BSPpSJoZ.d.ts:62:declare function discoverChannelsByRentPayer(signer: Pick<FacilitatorSvmSigner, "getProgramAccounts">, network: string, rentPayer: string, programId?: string): Promise<DiscoveredChannel[]>;
+dist/cjs/discovery-BSPpSJoZ.d.ts:64:export { CHANNEL_ACCOUNT_SIZE as C, type DiscoveredChannel as D, CHANNEL_RENT_PAYER_OFFSET as a, discoverChannelsByRentPayer as d };
+dist/cjs/exact/client/index.d.ts:1:export { E as ExactSvmScheme } from '../../scheme-BYN0UywL.js';
+dist/cjs/exact/client/index.d.ts:36:declare function registerExactSvmScheme(client: x402Client, config: SvmClientConfig): x402Client;
+dist/cjs/exact/client/index.d.ts:38:export { type SvmClientConfig, registerExactSvmScheme };
+dist/cjs/exact/facilitator/index.d.ts:1:export { E as ExactSvmScheme } from '../../scheme-BcpmRJSH.js';
+dist/cjs/exact/facilitator/index.d.ts:44:declare function registerExactSvmScheme(facilitator: x402Facilitator, config: SvmFacilitatorConfig): x402Facilitator;
+dist/cjs/exact/facilitator/index.d.ts:46:export { type SvmFacilitatorConfig, registerExactSvmScheme };
+dist/cjs/exact/server/index.d.ts:16:declare class ExactSvmScheme implements SchemeNetworkServer {
+dist/cjs/exact/server/index.d.ts:117:declare function registerExactSvmScheme(server: x402ResourceServer, config?: SvmResourceServerConfig): x402ResourceServer;
+dist/cjs/exact/server/index.d.ts:119:export { ExactSvmScheme, type ExactSvmServerOptions, type SvmResourceServerConfig, registerExactSvmScheme };
+dist/cjs/exact/v1/client/index.d.ts:10:declare class ExactSvmSchemeV1 implements SchemeNetworkClient {
+dist/cjs/exact/v1/client/index.d.ts:37:export { ExactSvmSchemeV1 };
+dist/cjs/exact/v1/facilitator/index.d.ts:9:declare class ExactSvmSchemeV1 implements SchemeNetworkFacilitator {
+dist/cjs/exact/v1/facilitator/index.d.ts:74:export { ExactSvmSchemeV1 };
+dist/cjs/index.d.ts:1:export { E as ExactSvmScheme } from './scheme-BYN0UywL.js';
+dist/cjs/index.d.ts:2:export { a as ExactSvmSchemeOptions } from './scheme-BcpmRJSH.js';
+dist/cjs/index.d.ts:3:export { UptoSvmScheme } from './upto/client/index.js';
+dist/cjs/index.d.ts:4:export { BatchSvmScheme } from './batch-settlement/client/index.js';
+dist/cjs/index.d.ts:7:export { c as BatchAuthorizationPayload, B as BatchChannelConfig, n as BatchChannelState, j as BatchClaimPayload, g as BatchDepositPayload, b as BatchExtra, m as BatchFacilitatorPayload, f as BatchPayload, i as BatchRefundPayload, k as BatchSettlePayload, e as BatchVoucher, l as BatchVoucherClaim, h as BatchVoucherPayload, d as BatchVoucherSigner, o as isBatchChannelConfig, q as isBatchFacilitatorPayload, p as isBatchPayload, r as isBatchVoucher } from './types-CPo7FwL6.js';
+dist/cjs/index.d.ts:10:export { a as ClientSvmConfig, C as ClientSvmSigner, c as FacilitatorAccountInfo, d as FacilitatorProgramAccount, f as FacilitatorRpcClient, g as FacilitatorRpcConfig, e as FacilitatorSimulateTransactionOptions, t as toClientSvmSigner, b as toFacilitatorSvmSigner } from './signer-gUqhJy7y.js';
+dist/cjs/index.d.ts:11:export { C as CHANNEL_ACCOUNT_SIZE, a as CHANNEL_RENT_PAYER_OFFSET, D as DiscoveredChannel, d as discoverChannelsByRentPayer } from './discovery-BSPpSJoZ.js';
+dist/cjs/index.d.ts:12:export { S as SettlementCache } from './settlement-cache-jUfefgU-.js';
+dist/cjs/index.d.ts:14:export { D as DEFAULT_ASSETS, S as SvmDefaultAsset, a as USDC_DEVNET_ADDRESS, U as USDC_MAINNET_ADDRESS, b as USDC_TESTNET_ADDRESS, f as findDefaultAsset, g as getDefaultAsset } from './defaultAssets-BxQwBgBJ.js';
+dist/cjs/index.d.ts:15:export { convertToTokenAmount, numberToDecimalString } from '@x402/core/utils';
+dist/cjs/index.d.ts:18:declare const BATCH_SETTLEMENT_SCHEME = "batch-settlement";
+dist/cjs/index.d.ts:34:declare function encodeBatchAuthorizationMessage(args: {
+dist/cjs/index.d.ts:53:declare function signBatchAuthorization(payer: MessagePartialSigner, channelId: string, operator: string, requestId: string, authorizedAmount: bigint, expiresAt: number): Promise<BatchAuthorization>;
+dist/cjs/index.d.ts:62:declare function verifyBatchAuthorization(authorization: BatchAuthorization, operator: string, nowSeconds?: number): Promise<boolean>;
+dist/cjs/index.d.ts:103:declare function encodeCloseAuthorizationDigest(binding: CloseAuthorizationBinding): Uint8Array;
+dist/cjs/index.d.ts:111:declare function signCloseAuthorization(authorizer: MessagePartialSigner, binding: CloseAuthorizationBinding): Promise<CloseAuthorization>;
+dist/cjs/index.d.ts:123:declare function verifyCloseAuthorization(authorization: CloseAuthorization, binding: Omit<CloseAuthorizationBinding, "validBefore">, receiverAuthorizer: string, maxTimeoutSeconds: number, nowSeconds?: number): Promise<boolean>;
+dist/cjs/index.d.ts:153:declare function assertSmartWalletLimits(limits?: SmartWalletLimits): void;
+dist/cjs/index.d.ts:218:declare function assertFeePayerIsolated(transaction: Transaction, feePayerAddress: string, signer?: FacilitatorSvmSigner, network?: string): Promise<void>;
+dist/cjs/index.d.ts:228:declare function validateComputeBudgetLimits(transaction: Transaction, limits?: SmartWalletLimits): void;
+dist/cjs/index.d.ts:237:declare function extractTransfersFromInnerInstructions(innerInstructions: SvmInnerInstructionsResult["innerInstructions"], accountKeys: readonly string[]): TransferCheckedInfo[];
+dist/cjs/index.d.ts:271:declare function verifySmartWalletTransaction(transactionBase64: string, requirements: PaymentRequirements, signer: SmartWalletVerifySigner, feePayerAddress: string, signerAddresses: readonly string[], options?: SmartWalletOptions, decoded?: DecodedTransactionView): Promise<SmartWalletVerifyResult>;
+dist/cjs/index.d.ts:294:declare function verifyPostSettlement(signer: FacilitatorSvmSigner, signature: string, network: string, requirements: PaymentRequirements, signerAddresses: string[], balanceBefore: bigint | null, balanceBeforeTokenProgram?: string | null, knownDestinationAta?: string | null): Promise<{
+dist/cjs/index.d.ts:366:declare function isUptoSvmPayload(payload: Record<string, unknown>): payload is UptoSvmPayloadV2;
+dist/cjs/index.d.ts:372:declare const TOKEN_PROGRAM_ADDRESS = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+dist/cjs/index.d.ts:373:declare const TOKEN_2022_PROGRAM_ADDRESS = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+dist/cjs/index.d.ts:374:declare const COMPUTE_BUDGET_PROGRAM_ADDRESS = "ComputeBudget111111111111111111111111111111";
+dist/cjs/index.d.ts:375:declare const MEMO_PROGRAM_ADDRESS = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
+dist/cjs/index.d.ts:384:declare const LIGHTHOUSE_PROGRAM_ADDRESS = "L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95";
+dist/cjs/index.d.ts:388:declare const DEVNET_RPC_URL = "https://api.devnet.solana.com";
+dist/cjs/index.d.ts:389:declare const TESTNET_RPC_URL = "https://api.testnet.solana.com";
+dist/cjs/index.d.ts:390:declare const MAINNET_RPC_URL = "https://api.mainnet-beta.solana.com";
+dist/cjs/index.d.ts:391:declare const DEVNET_WS_URL = "wss://api.devnet.solana.com";
+dist/cjs/index.d.ts:392:declare const TESTNET_WS_URL = "wss://api.testnet.solana.com";
+dist/cjs/index.d.ts:393:declare const MAINNET_WS_URL = "wss://api.mainnet-beta.solana.com";
+dist/cjs/index.d.ts:398:declare const DEFAULT_COMPUTE_UNIT_PRICE_MICROLAMPORTS = 1;
+dist/cjs/index.d.ts:399:declare const MAX_COMPUTE_UNIT_PRICE_MICROLAMPORTS = 5000000;
+dist/cjs/index.d.ts:400:declare const DEFAULT_COMPUTE_UNIT_LIMIT = 20000;
+dist/cjs/index.d.ts:401:declare const MAX_MEMO_BYTES = 256;
+dist/cjs/index.d.ts:406:declare const SETTLEMENT_TTL_MS = 120000;
+dist/cjs/index.d.ts:410:declare const SVM_ADDRESS_REGEX: RegExp;
+dist/cjs/index.d.ts:414:declare const SOLANA_MAINNET_CAIP2 = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+dist/cjs/index.d.ts:415:declare const SOLANA_DEVNET_CAIP2 = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1";
+dist/cjs/index.d.ts:416:declare const SOLANA_TESTNET_CAIP2 = "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z";
+dist/cjs/index.d.ts:421:declare const V1_TO_V2_NETWORK_MAP: Record<string, string>;
+dist/cjs/index.d.ts:428:declare function normalizeNetwork(network: string): string;
+dist/cjs/index.d.ts:440:declare function validateSvmAddress(address: string): boolean;
+dist/cjs/index.d.ts:451:declare function transactionMessageHash(transaction: Transaction): string;
+dist/cjs/index.d.ts:458:declare function decodeTransactionFromPayload(svmPayload: ExactSvmPayloadV1): Transaction;
+dist/cjs/index.d.ts:465:declare function getTokenPayerFromTransaction(transaction: Transaction): string;
+dist/cjs/index.d.ts:473:declare function createRpcClient(network: Network, customRpcUrl?: string): RpcDevnet<SolanaRpcApiDevnet> | RpcTestnet<SolanaRpcApiTestnet> | RpcMainnet<SolanaRpcApiMainnet>;
+dist/cjs/index.d.ts:486:declare function resolveBlockhash(rpc: ReturnType<typeof createRpcClient>, requirements: PaymentRequirements): Promise<{
+dist/cjs/index.d.ts:503:declare function resolveOpenSlot(rpc: ReturnType<typeof createRpcClient>, requirements: PaymentRequirements): Promise<bigint>;
+dist/cjs/index.d.ts:510:declare function getUsdcAddress(network: Network): string;
+dist/cjs/index.d.ts:518:declare function getStablecoinAddress(symbol: string, network: Network): string;
+dist/cjs/index.d.ts:526:declare function resolveStablecoinMint(currency: string, network: Network): string | undefined;
+dist/cjs/index.d.ts:533:declare function getStablecoinSymbol(currency: string): string | undefined;
+dist/cjs/index.d.ts:542:declare function getStablecoinTokenProgram(currency: string, network: Network): string;
+dist/cjs/index.d.ts:554:declare class TransactionOnchainFailureError extends Error {
+dist/cjs/index.d.ts:583:declare function recordPendingOrTerminal(store: PendingSettlementStore, key: string, signature: string, payer: string, network: Network, pendingReason: string, terminalReason: string, error: unknown): Promise<SettleResponse>;
+dist/cjs/index.d.ts:585:export { BATCH_SETTLEMENT_SCHEME, BatchAuthorization, COMPUTE_BUDGET_PROGRAM_ADDRESS, CloseAuthorization, type CloseAuthorizationBinding, DEFAULT_COMPUTE_UNIT_LIMIT, DEFAULT_COMPUTE_UNIT_PRICE_MICROLAMPORTS, DEVNET_RPC_URL, DEVNET_WS_URL, type ExactSvmPayloadV1, type ExactSvmPayloadV2, FacilitatorSvmSigner, LIGHTHOUSE_PROGRAM_ADDRESS, MAINNET_RPC_URL, MAINNET_WS_URL, MAX_COMPUTE_UNIT_PRICE_MICROLAMPORTS, MAX_MEMO_BYTES, MEMO_PROGRAM_ADDRESS, SETTLEMENT_TTL_MS, SOLANA_DEVNET_CAIP2, SOLANA_MAINNET_CAIP2, SOLANA_TESTNET_CAIP2, SVM_ADDRESS_REGEX, type SmartWalletLimits, type SmartWalletOptions, SvmInnerInstructionsResult, TESTNET_RPC_URL, TESTNET_WS_URL, TOKEN_2022_PROGRAM_ADDRESS, TOKEN_PROGRAM_ADDRESS, TransactionOnchainFailureError, type TransferCheckedInfo, type UptoSvmPayloadV2, V1_TO_V2_NETWORK_MAP, assertFeePayerIsolated, assertSmartWalletLimits, createRpcClient, decodeTransactionFromPayload, encodeBatchAuthorizationMessage, encodeCloseAuthorizationDigest, extractTransfersFromInnerInstructions, getStablecoinAddress, getStablecoinSymbol, getStablecoinTokenProgram, getTokenPayerFromTransaction, getUsdcAddress, isUptoSvmPayload, normalizeNetwork, recordPendingOrTerminal, resolveBlockhash, resolveOpenSlot, resolveStablecoinMint, signBatchAuthorization, signCloseAuthorization, transactionMessageHash, validateComputeBudgetLimits, validateSvmAddress, verifyBatchAuthorization, verifyCloseAuthorization, verifyPostSettlement, verifySmartWalletTransaction };
+dist/cjs/rentCleanup-D91n7iIF.d.ts:122:declare class InMemoryPaymentChannelStorage implements PaymentChannelStorage {
+dist/cjs/rentCleanup-D91n7iIF.d.ts:170:declare const DEFAULT_ABANDON_GRACE_SECS = 120;
+dist/cjs/rentCleanup-D91n7iIF.d.ts:177:declare const DEFAULT_MAX_IDLE_SECS: number;
+dist/cjs/rentCleanup-D91n7iIF.d.ts:179:declare const DEFAULT_MAX_RECLAIMS_PER_TX = 8;
+dist/cjs/rentCleanup-D91n7iIF.d.ts:188:declare const MAX_SAFE_RECLAIMS_PER_TX = 16;
+dist/cjs/rentCleanup-D91n7iIF.d.ts:190:declare const DEFAULT_MAX_TXS_PER_RUN = 20;
+dist/cjs/rentCleanup-D91n7iIF.d.ts:192:declare const DEFAULT_MAX_TXS_PER_SIGNER = 20;
+dist/cjs/rentCleanup-D91n7iIF.d.ts:194:declare const DEFAULT_MAX_CLOSES_PER_RUN = 10;
+dist/cjs/rentCleanup-D91n7iIF.d.ts:323:declare class PaymentChannelRentCleanupManager {
+dist/cjs/rentCleanup-D91n7iIF.d.ts:513:export { DEFAULT_ABANDON_GRACE_SECS as D, InMemoryPaymentChannelStorage as I, MAX_SAFE_RECLAIMS_PER_TX as M, PaymentChannelRentCleanupManager as P, type RentCleanupCloseResult as R, type PaymentChannelStorage as a, type PaymentChannelOpenWrite as b, type PaymentChannelRecord as c, DEFAULT_MAX_CLOSES_PER_RUN as d, DEFAULT_MAX_RECLAIMS_PER_TX as e, DEFAULT_MAX_TXS_PER_RUN as f, DEFAULT_MAX_TXS_PER_SIGNER as g, type RentCleanupOptions as h, type RentCleanupReclaimResult as i, type RentCleanupStartConfig as j, type RentDiscoveryOptions as k, type RentDiscoveryResult as l, DEFAULT_MAX_IDLE_SECS as m };
+dist/cjs/scheme-BcpmRJSH.d.ts:95:declare class ExactSvmScheme implements SchemeNetworkFacilitator {
+dist/cjs/scheme-BcpmRJSH.d.ts:217:export { ExactSvmScheme as E, type ExactSvmSchemeOptions as a };
+dist/cjs/scheme-BYN0UywL.d.ts:9:declare class ExactSvmScheme implements SchemeNetworkClient {
+dist/cjs/scheme-BYN0UywL.d.ts:33:export { ExactSvmScheme as E };
+dist/cjs/settlement-cache-jUfefgU-.d.ts:10:declare class SettlementCache {
+dist/cjs/settlement-cache-jUfefgU-.d.ts:34:export { SettlementCache as S };
+dist/cjs/signer-gUqhJy7y.d.ts:268:declare function toClientSvmSigner(signer: ClientSvmSigner): ClientSvmSigner;
+dist/cjs/signer-gUqhJy7y.d.ts:307:declare function toFacilitatorSvmSigner(signer: TransactionSigner & MessagePartialSigner, rpcConfig?: FacilitatorRpcConfig): FacilitatorSvmSigner;
+dist/cjs/signer-gUqhJy7y.d.ts:309:export { type ClientSvmSigner as C, type FacilitatorSvmSigner as F, type SvmInnerInstructionsResult as S, type ClientSvmConfig as a, toFacilitatorSvmSigner as b, type FacilitatorAccountInfo as c, type FacilitatorProgramAccount as d, type FacilitatorSimulateTransactionOptions as e, type FacilitatorRpcClient as f, type FacilitatorRpcConfig as g, toClientSvmSigner as t };
+dist/cjs/types-CPo7FwL6.d.ts:152:declare function isBatchVoucher(value: unknown): value is BatchVoucher;
+dist/cjs/types-CPo7FwL6.d.ts:153:declare function isBatchChannelConfig(value: unknown): value is BatchChannelConfig;
+dist/cjs/types-CPo7FwL6.d.ts:154:declare function isBatchPayload(value: unknown): value is BatchPayload;
+dist/cjs/types-CPo7FwL6.d.ts:155:declare function isBatchFacilitatorPayload(value: unknown): value is BatchFacilitatorPayload;
+dist/cjs/types-CPo7FwL6.d.ts:157:export { type BatchChannelConfig as B, type CloseAuthorization as C, type BatchAuthorization as a, type BatchExtra as b, type BatchAuthorizationPayload as c, type BatchVoucherSigner as d, type BatchVoucher as e, type BatchPayload as f, type BatchDepositPayload as g, type BatchVoucherPayload as h, type BatchRefundPayload as i, type BatchClaimPayload as j, type BatchSettlePayload as k, type BatchVoucherClaim as l, type BatchFacilitatorPayload as m, type BatchChannelState as n, isBatchChannelConfig as o, isBatchPayload as p, isBatchFacilitatorPayload as q, isBatchVoucher as r };
+dist/cjs/upto/client/index.d.ts:16:declare class UptoSvmScheme implements SchemeNetworkClient {
+dist/cjs/upto/client/index.d.ts:40:export { UptoSvmScheme };
+dist/cjs/upto/facilitator/index.d.ts:6:export { D as DEFAULT_ABANDON_GRACE_SECS, d as DEFAULT_MAX_CLOSES_PER_RUN, e as DEFAULT_MAX_RECLAIMS_PER_TX, f as DEFAULT_MAX_TXS_PER_RUN, g as DEFAULT_MAX_TXS_PER_SIGNER, I as InMemoryPaymentChannelStorage, M as MAX_SAFE_RECLAIMS_PER_TX, b as PaymentChannelOpenWrite, c as PaymentChannelRecord, R as RentCleanupCloseResult, h as RentCleanupOptions, i as RentCleanupReclaimResult, j as RentCleanupStartConfig, k as RentDiscoveryOptions, l as RentDiscoveryResult } from '../../rentCleanup-D91n7iIF.js';
+dist/cjs/upto/facilitator/index.d.ts:41:declare class UptoSvmRentCleanupManager extends PaymentChannelRentCleanupManager {
+dist/cjs/upto/facilitator/index.d.ts:51:declare const ERR_SETTLEMENT_EXCEEDS_AMOUNT = "invalid_upto_svm_payload_settlement_exceeds_amount";
+dist/cjs/upto/facilitator/index.d.ts:53:declare const ERR_UNEXPECTED_VOUCHER = "invalid_upto_svm_payload_unexpected_voucher";
+dist/cjs/upto/facilitator/index.d.ts:55:declare const ERR_CHANNEL_ALREADY_OPEN = "invalid_upto_svm_channel_already_open";
+dist/cjs/upto/facilitator/index.d.ts:57:declare const ERR_CHANNEL_LIFETIME_EXCEEDED = "invalid_upto_svm_payload_channel_lifetime_exceeded";
+dist/cjs/upto/facilitator/index.d.ts:59:declare const ERR_EXPIRES_AT_MISMATCH = "invalid_upto_svm_payload_expires_at_mismatch";
+dist/cjs/upto/facilitator/index.d.ts:61:declare const ERR_AUTHORIZER_NOT_CONFIGURED = "invalid_upto_svm_authorizer_not_configured";
+dist/cjs/upto/facilitator/index.d.ts:63:declare const ERR_AUTHORIZER_ADDRESS_MISMATCH = "invalid_upto_svm_authorizer_address_mismatch";
+dist/cjs/upto/facilitator/index.d.ts:65:declare const ERR_DELEGATED_SETTLE_UNAUTHENTICATED = "invalid_upto_svm_delegated_settle_unauthenticated";
+dist/cjs/upto/facilitator/index.d.ts:67:declare const ERR_DELEGATED_AUTH_STORE = "invalid_upto_svm_delegated_auth_store";
+dist/cjs/upto/facilitator/index.d.ts:69:declare const ERR_PAYLOAD_TYPE = "invalid_upto_svm_payload_type";
+dist/cjs/upto/facilitator/index.d.ts:71:declare const DEFAULT_MAX_CHANNEL_LIFETIME_SECS = 3600;
+dist/cjs/upto/facilitator/index.d.ts:207:declare class UptoSvmScheme implements SchemeNetworkFacilitator {
+dist/cjs/upto/facilitator/index.d.ts:405:declare const ErrSettlementPending = "settlement_pending";
+dist/cjs/upto/facilitator/index.d.ts:425:declare const DEFAULT_CHANNEL_READ_MAX_ATTEMPTS = 6;
+dist/cjs/upto/facilitator/index.d.ts:426:declare const DEFAULT_CHANNEL_READ_BACKOFF_STEP_MS = 200;
+dist/cjs/upto/facilitator/index.d.ts:437:declare class ChannelBroadcastConfirmationError extends Error {
+dist/cjs/upto/facilitator/index.d.ts:451:declare class ChannelSimulationError extends Error {
+dist/cjs/upto/facilitator/index.d.ts:462:declare class SettlementConfirmationTimeoutError extends Error {
+dist/cjs/upto/facilitator/index.d.ts:472:export { ChannelBroadcastConfirmationError as ChannelOpenConfirmationError, DEFAULT_CHANNEL_READ_BACKOFF_STEP_MS, DEFAULT_CHANNEL_READ_MAX_ATTEMPTS, DEFAULT_MAX_CHANNEL_LIFETIME_SECS, ERR_AUTHORIZER_ADDRESS_MISMATCH, ERR_AUTHORIZER_NOT_CONFIGURED, ERR_CHANNEL_ALREADY_OPEN, ERR_CHANNEL_LIFETIME_EXCEEDED, ERR_DELEGATED_AUTH_STORE, ERR_DELEGATED_SETTLE_UNAUTHENTICATED, ERR_EXPIRES_AT_MISMATCH, ERR_PAYLOAD_TYPE, ERR_SETTLEMENT_EXCEEDS_AMOUNT, ERR_UNEXPECTED_VOUCHER, ErrSettlementPending, PaymentChannelStorage, SettlementConfirmationTimeoutError, ChannelSimulationError as SettlementSimulationError, type UptoDelegatedSettleContext, type UptoSvmFacilitatorConfig, UptoSvmRentCleanupManager, type UptoSvmRentCleanupManagerConfig, UptoSvmScheme, type PaymentChannelSvmSigner as UptoSvmSigner };
+dist/cjs/upto/server/index.d.ts:37:declare class UptoSvmScheme implements SchemeNetworkServer {
+dist/cjs/upto/server/index.d.ts:145:export { UptoSvmScheme, type UptoSvmServerOptions };
+dist/cjs/v1/index.d.ts:1:export { ExactSvmSchemeV1 } from '../exact/v1/client/index.js';
+dist/cjs/v1/index.d.ts:11:declare const NETWORKS: string[];
+dist/cjs/v1/index.d.ts:13:export { NETWORKS };
+dist/esm/batch-settlement/client/index.d.mts:11:declare function signBatchVoucher(signer: BatchClientSigner, voucher: {
+dist/esm/batch-settlement/client/index.d.mts:16:declare class BatchChannelTracker {
+dist/esm/batch-settlement/client/index.d.mts:80:declare function buildDepositPayload(args: BuildDepositArgs): Promise<BuiltDeposit>;
+dist/esm/batch-settlement/client/index.d.mts:81:declare function buildRefundPayload(args: {
+dist/esm/batch-settlement/client/index.d.mts:98:declare class NoBatchChannelToRefundError extends Error {
+dist/esm/batch-settlement/client/index.d.mts:131:declare function probeBatchRequirements(url: string, fetchImpl: typeof fetch): Promise<{
+dist/esm/batch-settlement/client/index.d.mts:152:declare function refundBatchChannel(build: RefundPayloadBuilder, url: string, options?: BatchRefundOptions): Promise<SettleResponse>;
+dist/esm/batch-settlement/client/index.d.mts:170:declare const DEFAULT_SERVER_SIGNED_MAX_DEPOSIT: Money;
+dist/esm/batch-settlement/client/index.d.mts:211:declare class UntrustedOperatorError extends Error {
+dist/esm/batch-settlement/client/index.d.mts:227:declare function isServerSignedAccept(accept: PaymentRequirements): boolean;
+dist/esm/batch-settlement/client/index.d.mts:305:declare class BatchSvmScheme implements SchemeNetworkClient {
+dist/esm/batch-settlement/client/index.d.mts:442:export { BatchChannelTracker, type BatchClientSigner, type BatchRefundOptions, type BatchServerSignedChannelsPolicy, type BatchSvmClientConfig, BatchSvmScheme, type BuildDepositArgs, type BuiltDeposit, DEFAULT_SERVER_SIGNED_MAX_DEPOSIT, NoBatchChannelToRefundError, type RefundPayloadOptions, type ServerSignedChannelsAsset, UntrustedOperatorError, buildDepositPayload, buildRefundPayload, isServerSignedAccept, probeBatchRequirements, refundBatchChannel, signBatchVoucher };
+dist/esm/batch-settlement/facilitator/index.d.mts:5:export { c as BatchChannelRecord, D as DEFAULT_ABANDON_GRACE_SECS, d as DEFAULT_MAX_CLOSES_PER_RUN, m as DEFAULT_MAX_IDLE_SECS, e as DEFAULT_MAX_RECLAIMS_PER_TX, f as DEFAULT_MAX_TXS_PER_RUN, g as DEFAULT_MAX_TXS_PER_SIGNER, I as InMemoryBatchChannelStorage, I as InMemoryPaymentChannelStorage, M as MAX_SAFE_RECLAIMS_PER_TX, b as PaymentChannelOpenWrite, c as PaymentChannelRecord, R as RentCleanupCloseResult, h as RentCleanupOptions, i as RentCleanupReclaimResult, j as RentCleanupStartConfig, k as RentDiscoveryOptions, l as RentDiscoveryResult } from '../../rentCleanup-D91n7iIF.mjs';
+dist/esm/batch-settlement/facilitator/index.d.mts:36:declare class BatchSvmRentCleanupManager extends PaymentChannelRentCleanupManager {
+dist/esm/batch-settlement/facilitator/index.d.mts:53:declare class InMemoryBatchPendingSettlementStore implements BatchPendingSettlementStore {
+dist/esm/batch-settlement/facilitator/index.d.mts:155:declare class BatchSvmScheme implements SchemeNetworkFacilitator {
+dist/esm/batch-settlement/facilitator/index.d.mts:314:declare const MAX_CHANNELS_PER_SETTLE_TX = 4;
+dist/esm/batch-settlement/facilitator/index.d.mts:322:declare function createReceiverBindingHistoryReader(rpcUrlByNetwork?: Partial<Record<string, string>>): BatchReceiverBindingHistoryReader;
+dist/esm/batch-settlement/facilitator/index.d.mts:324:export { PaymentChannelStorage as BatchChannelStorage, type BatchDelegatedReceiverAuth, type BatchDelegatedSettleContext, type BatchPendingSettlementStore, type BatchReceiverBindingHistoryReader, type BatchReceiverBindingHistorySignature, type BatchSvmFacilitatorConfig, BatchSvmRentCleanupManager, type BatchSvmRentCleanupManagerConfig, BatchSvmScheme, InMemoryBatchPendingSettlementStore, MAX_CHANNELS_PER_SETTLE_TX, PaymentChannelStorage, createReceiverBindingHistoryReader };
+dist/esm/batch-settlement/server/index.d.mts:36:declare class MemoryBatchOperationStore implements BatchOperationStore {
+dist/esm/batch-settlement/server/index.d.mts:249:declare class BatchChannelManager {
+dist/esm/batch-settlement/server/index.d.mts:396:declare class BatchSvmScheme implements SchemeNetworkServer {
+dist/esm/batch-settlement/server/index.d.mts:745:declare class MemoryChannelStore implements ChannelStore {
+dist/esm/batch-settlement/server/index.d.mts:766:export { BatchChannelManager, type BatchChannelManagerConfig, type BatchOperation, type BatchOperationStore, BatchSvmScheme, type BatchSvmServerConfig, type ChannelState, type ChannelStore, type ClaimResult, MemoryBatchOperationStore, MemoryChannelStore, type RedemptionResult, type RedemptionSettler, type SealResult, type SettleResult };
+dist/esm/defaultAssets-BxQwBgBJ.d.mts:7:declare const USDC_MAINNET_ADDRESS = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+dist/esm/defaultAssets-BxQwBgBJ.d.mts:8:declare const USDC_DEVNET_ADDRESS = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+dist/esm/defaultAssets-BxQwBgBJ.d.mts:9:declare const USDC_TESTNET_ADDRESS = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+dist/esm/defaultAssets-BxQwBgBJ.d.mts:11:declare const DEFAULT_ASSETS: DefaultAssetTable<SvmDefaultAsset>;
+dist/esm/defaultAssets-BxQwBgBJ.d.mts:20:declare const getDefaultAsset: GetDefaultAsset<SvmDefaultAsset>;
+dist/esm/defaultAssets-BxQwBgBJ.d.mts:28:declare const findDefaultAsset: FindDefaultAsset<SvmDefaultAsset>;
+dist/esm/defaultAssets-BxQwBgBJ.d.mts:30:export { DEFAULT_ASSETS as D, type SvmDefaultAsset as S, USDC_MAINNET_ADDRESS as U, USDC_DEVNET_ADDRESS as a, USDC_TESTNET_ADDRESS as b, findDefaultAsset as f, getDefaultAsset as g };
+dist/esm/discovery-BSPpSJoZ.d.mts:54:declare const CHANNEL_ACCOUNT_SIZE = 256n;
+dist/esm/discovery-BSPpSJoZ.d.mts:56:declare const CHANNEL_RENT_PAYER_OFFSET = 216n;
+dist/esm/discovery-BSPpSJoZ.d.mts:62:declare function discoverChannelsByRentPayer(signer: Pick<FacilitatorSvmSigner, "getProgramAccounts">, network: string, rentPayer: string, programId?: string): Promise<DiscoveredChannel[]>;
+dist/esm/discovery-BSPpSJoZ.d.mts:64:export { CHANNEL_ACCOUNT_SIZE as C, type DiscoveredChannel as D, CHANNEL_RENT_PAYER_OFFSET as a, discoverChannelsByRentPayer as d };
+dist/esm/exact/client/index.d.mts:1:export { E as ExactSvmScheme } from '../../scheme-BYN0UywL.mjs';
+dist/esm/exact/client/index.d.mts:36:declare function registerExactSvmScheme(client: x402Client, config: SvmClientConfig): x402Client;
+dist/esm/exact/client/index.d.mts:38:export { type SvmClientConfig, registerExactSvmScheme };
+dist/esm/exact/facilitator/index.d.mts:1:export { E as ExactSvmScheme } from '../../scheme-BcpmRJSH.mjs';
+dist/esm/exact/facilitator/index.d.mts:44:declare function registerExactSvmScheme(facilitator: x402Facilitator, config: SvmFacilitatorConfig): x402Facilitator;
+dist/esm/exact/facilitator/index.d.mts:46:export { type SvmFacilitatorConfig, registerExactSvmScheme };
+dist/esm/exact/server/index.d.mts:16:declare class ExactSvmScheme implements SchemeNetworkServer {
+dist/esm/exact/server/index.d.mts:117:declare function registerExactSvmScheme(server: x402ResourceServer, config?: SvmResourceServerConfig): x402ResourceServer;
+dist/esm/exact/server/index.d.mts:119:export { ExactSvmScheme, type ExactSvmServerOptions, type SvmResourceServerConfig, registerExactSvmScheme };
+dist/esm/exact/v1/client/index.d.mts:10:declare class ExactSvmSchemeV1 implements SchemeNetworkClient {
+dist/esm/exact/v1/client/index.d.mts:37:export { ExactSvmSchemeV1 };
+dist/esm/exact/v1/facilitator/index.d.mts:9:declare class ExactSvmSchemeV1 implements SchemeNetworkFacilitator {
+dist/esm/exact/v1/facilitator/index.d.mts:74:export { ExactSvmSchemeV1 };
+dist/esm/index.d.mts:1:export { E as ExactSvmScheme } from './scheme-BYN0UywL.mjs';
+dist/esm/index.d.mts:2:export { a as ExactSvmSchemeOptions } from './scheme-BcpmRJSH.mjs';
+dist/esm/index.d.mts:3:export { UptoSvmScheme } from './upto/client/index.mjs';
+dist/esm/index.d.mts:4:export { BatchSvmScheme } from './batch-settlement/client/index.mjs';
+dist/esm/index.d.mts:7:export { c as BatchAuthorizationPayload, B as BatchChannelConfig, n as BatchChannelState, j as BatchClaimPayload, g as BatchDepositPayload, b as BatchExtra, m as BatchFacilitatorPayload, f as BatchPayload, i as BatchRefundPayload, k as BatchSettlePayload, e as BatchVoucher, l as BatchVoucherClaim, h as BatchVoucherPayload, d as BatchVoucherSigner, o as isBatchChannelConfig, q as isBatchFacilitatorPayload, p as isBatchPayload, r as isBatchVoucher } from './types-CPo7FwL6.mjs';
+dist/esm/index.d.mts:10:export { a as ClientSvmConfig, C as ClientSvmSigner, c as FacilitatorAccountInfo, d as FacilitatorProgramAccount, f as FacilitatorRpcClient, g as FacilitatorRpcConfig, e as FacilitatorSimulateTransactionOptions, t as toClientSvmSigner, b as toFacilitatorSvmSigner } from './signer-gUqhJy7y.mjs';
+dist/esm/index.d.mts:11:export { C as CHANNEL_ACCOUNT_SIZE, a as CHANNEL_RENT_PAYER_OFFSET, D as DiscoveredChannel, d as discoverChannelsByRentPayer } from './discovery-BSPpSJoZ.mjs';
+dist/esm/index.d.mts:12:export { S as SettlementCache } from './settlement-cache-jUfefgU-.mjs';
+dist/esm/index.d.mts:14:export { D as DEFAULT_ASSETS, S as SvmDefaultAsset, a as USDC_DEVNET_ADDRESS, U as USDC_MAINNET_ADDRESS, b as USDC_TESTNET_ADDRESS, f as findDefaultAsset, g as getDefaultAsset } from './defaultAssets-BxQwBgBJ.mjs';
+dist/esm/index.d.mts:15:export { convertToTokenAmount, numberToDecimalString } from '@x402/core/utils';
+dist/esm/index.d.mts:18:declare const BATCH_SETTLEMENT_SCHEME = "batch-settlement";
+dist/esm/index.d.mts:34:declare function encodeBatchAuthorizationMessage(args: {
+dist/esm/index.d.mts:53:declare function signBatchAuthorization(payer: MessagePartialSigner, channelId: string, operator: string, requestId: string, authorizedAmount: bigint, expiresAt: number): Promise<BatchAuthorization>;
+dist/esm/index.d.mts:62:declare function verifyBatchAuthorization(authorization: BatchAuthorization, operator: string, nowSeconds?: number): Promise<boolean>;
+dist/esm/index.d.mts:103:declare function encodeCloseAuthorizationDigest(binding: CloseAuthorizationBinding): Uint8Array;
+dist/esm/index.d.mts:111:declare function signCloseAuthorization(authorizer: MessagePartialSigner, binding: CloseAuthorizationBinding): Promise<CloseAuthorization>;
+dist/esm/index.d.mts:123:declare function verifyCloseAuthorization(authorization: CloseAuthorization, binding: Omit<CloseAuthorizationBinding, "validBefore">, receiverAuthorizer: string, maxTimeoutSeconds: number, nowSeconds?: number): Promise<boolean>;
+dist/esm/index.d.mts:153:declare function assertSmartWalletLimits(limits?: SmartWalletLimits): void;
+dist/esm/index.d.mts:218:declare function assertFeePayerIsolated(transaction: Transaction, feePayerAddress: string, signer?: FacilitatorSvmSigner, network?: string): Promise<void>;
+dist/esm/index.d.mts:228:declare function validateComputeBudgetLimits(transaction: Transaction, limits?: SmartWalletLimits): void;
+dist/esm/index.d.mts:237:declare function extractTransfersFromInnerInstructions(innerInstructions: SvmInnerInstructionsResult["innerInstructions"], accountKeys: readonly string[]): TransferCheckedInfo[];
+dist/esm/index.d.mts:271:declare function verifySmartWalletTransaction(transactionBase64: string, requirements: PaymentRequirements, signer: SmartWalletVerifySigner, feePayerAddress: string, signerAddresses: readonly string[], options?: SmartWalletOptions, decoded?: DecodedTransactionView): Promise<SmartWalletVerifyResult>;
+dist/esm/index.d.mts:294:declare function verifyPostSettlement(signer: FacilitatorSvmSigner, signature: string, network: string, requirements: PaymentRequirements, signerAddresses: string[], balanceBefore: bigint | null, balanceBeforeTokenProgram?: string | null, knownDestinationAta?: string | null): Promise<{
+dist/esm/index.d.mts:366:declare function isUptoSvmPayload(payload: Record<string, unknown>): payload is UptoSvmPayloadV2;
+dist/esm/index.d.mts:372:declare const TOKEN_PROGRAM_ADDRESS = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+dist/esm/index.d.mts:373:declare const TOKEN_2022_PROGRAM_ADDRESS = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+dist/esm/index.d.mts:374:declare const COMPUTE_BUDGET_PROGRAM_ADDRESS = "ComputeBudget111111111111111111111111111111";
+dist/esm/index.d.mts:375:declare const MEMO_PROGRAM_ADDRESS = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
+dist/esm/index.d.mts:384:declare const LIGHTHOUSE_PROGRAM_ADDRESS = "L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95";
+dist/esm/index.d.mts:388:declare const DEVNET_RPC_URL = "https://api.devnet.solana.com";
+dist/esm/index.d.mts:389:declare const TESTNET_RPC_URL = "https://api.testnet.solana.com";
+dist/esm/index.d.mts:390:declare const MAINNET_RPC_URL = "https://api.mainnet-beta.solana.com";
+dist/esm/index.d.mts:391:declare const DEVNET_WS_URL = "wss://api.devnet.solana.com";
+dist/esm/index.d.mts:392:declare const TESTNET_WS_URL = "wss://api.testnet.solana.com";
+dist/esm/index.d.mts:393:declare const MAINNET_WS_URL = "wss://api.mainnet-beta.solana.com";
+dist/esm/index.d.mts:398:declare const DEFAULT_COMPUTE_UNIT_PRICE_MICROLAMPORTS = 1;
+dist/esm/index.d.mts:399:declare const MAX_COMPUTE_UNIT_PRICE_MICROLAMPORTS = 5000000;
+dist/esm/index.d.mts:400:declare const DEFAULT_COMPUTE_UNIT_LIMIT = 20000;
+dist/esm/index.d.mts:401:declare const MAX_MEMO_BYTES = 256;
+dist/esm/index.d.mts:406:declare const SETTLEMENT_TTL_MS = 120000;
+dist/esm/index.d.mts:410:declare const SVM_ADDRESS_REGEX: RegExp;
+dist/esm/index.d.mts:414:declare const SOLANA_MAINNET_CAIP2 = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+dist/esm/index.d.mts:415:declare const SOLANA_DEVNET_CAIP2 = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1";
+dist/esm/index.d.mts:416:declare const SOLANA_TESTNET_CAIP2 = "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z";
+dist/esm/index.d.mts:421:declare const V1_TO_V2_NETWORK_MAP: Record<string, string>;
+dist/esm/index.d.mts:428:declare function normalizeNetwork(network: string): string;
+dist/esm/index.d.mts:440:declare function validateSvmAddress(address: string): boolean;
+dist/esm/index.d.mts:451:declare function transactionMessageHash(transaction: Transaction): string;
+dist/esm/index.d.mts:458:declare function decodeTransactionFromPayload(svmPayload: ExactSvmPayloadV1): Transaction;
+dist/esm/index.d.mts:465:declare function getTokenPayerFromTransaction(transaction: Transaction): string;
+dist/esm/index.d.mts:473:declare function createRpcClient(network: Network, customRpcUrl?: string): RpcDevnet<SolanaRpcApiDevnet> | RpcTestnet<SolanaRpcApiTestnet> | RpcMainnet<SolanaRpcApiMainnet>;
+dist/esm/index.d.mts:486:declare function resolveBlockhash(rpc: ReturnType<typeof createRpcClient>, requirements: PaymentRequirements): Promise<{
+dist/esm/index.d.mts:503:declare function resolveOpenSlot(rpc: ReturnType<typeof createRpcClient>, requirements: PaymentRequirements): Promise<bigint>;
+dist/esm/index.d.mts:510:declare function getUsdcAddress(network: Network): string;
+dist/esm/index.d.mts:518:declare function getStablecoinAddress(symbol: string, network: Network): string;
+dist/esm/index.d.mts:526:declare function resolveStablecoinMint(currency: string, network: Network): string | undefined;
+dist/esm/index.d.mts:533:declare function getStablecoinSymbol(currency: string): string | undefined;
+dist/esm/index.d.mts:542:declare function getStablecoinTokenProgram(currency: string, network: Network): string;
+dist/esm/index.d.mts:554:declare class TransactionOnchainFailureError extends Error {
+dist/esm/index.d.mts:583:declare function recordPendingOrTerminal(store: PendingSettlementStore, key: string, signature: string, payer: string, network: Network, pendingReason: string, terminalReason: string, error: unknown): Promise<SettleResponse>;
+dist/esm/index.d.mts:585:export { BATCH_SETTLEMENT_SCHEME, BatchAuthorization, COMPUTE_BUDGET_PROGRAM_ADDRESS, CloseAuthorization, type CloseAuthorizationBinding, DEFAULT_COMPUTE_UNIT_LIMIT, DEFAULT_COMPUTE_UNIT_PRICE_MICROLAMPORTS, DEVNET_RPC_URL, DEVNET_WS_URL, type ExactSvmPayloadV1, type ExactSvmPayloadV2, FacilitatorSvmSigner, LIGHTHOUSE_PROGRAM_ADDRESS, MAINNET_RPC_URL, MAINNET_WS_URL, MAX_COMPUTE_UNIT_PRICE_MICROLAMPORTS, MAX_MEMO_BYTES, MEMO_PROGRAM_ADDRESS, SETTLEMENT_TTL_MS, SOLANA_DEVNET_CAIP2, SOLANA_MAINNET_CAIP2, SOLANA_TESTNET_CAIP2, SVM_ADDRESS_REGEX, type SmartWalletLimits, type SmartWalletOptions, SvmInnerInstructionsResult, TESTNET_RPC_URL, TESTNET_WS_URL, TOKEN_2022_PROGRAM_ADDRESS, TOKEN_PROGRAM_ADDRESS, TransactionOnchainFailureError, type TransferCheckedInfo, type UptoSvmPayloadV2, V1_TO_V2_NETWORK_MAP, assertFeePayerIsolated, assertSmartWalletLimits, createRpcClient, decodeTransactionFromPayload, encodeBatchAuthorizationMessage, encodeCloseAuthorizationDigest, extractTransfersFromInnerInstructions, getStablecoinAddress, getStablecoinSymbol, getStablecoinTokenProgram, getTokenPayerFromTransaction, getUsdcAddress, isUptoSvmPayload, normalizeNetwork, recordPendingOrTerminal, resolveBlockhash, resolveOpenSlot, resolveStablecoinMint, signBatchAuthorization, signCloseAuthorization, transactionMessageHash, validateComputeBudgetLimits, validateSvmAddress, verifyBatchAuthorization, verifyCloseAuthorization, verifyPostSettlement, verifySmartWalletTransaction };
+dist/esm/rentCleanup-D91n7iIF.d.mts:122:declare class InMemoryPaymentChannelStorage implements PaymentChannelStorage {
+dist/esm/rentCleanup-D91n7iIF.d.mts:170:declare const DEFAULT_ABANDON_GRACE_SECS = 120;
+dist/esm/rentCleanup-D91n7iIF.d.mts:177:declare const DEFAULT_MAX_IDLE_SECS: number;
+dist/esm/rentCleanup-D91n7iIF.d.mts:179:declare const DEFAULT_MAX_RECLAIMS_PER_TX = 8;
+dist/esm/rentCleanup-D91n7iIF.d.mts:188:declare const MAX_SAFE_RECLAIMS_PER_TX = 16;
+dist/esm/rentCleanup-D91n7iIF.d.mts:190:declare const DEFAULT_MAX_TXS_PER_RUN = 20;
+dist/esm/rentCleanup-D91n7iIF.d.mts:192:declare const DEFAULT_MAX_TXS_PER_SIGNER = 20;
+dist/esm/rentCleanup-D91n7iIF.d.mts:194:declare const DEFAULT_MAX_CLOSES_PER_RUN = 10;
+dist/esm/rentCleanup-D91n7iIF.d.mts:323:declare class PaymentChannelRentCleanupManager {
+dist/esm/rentCleanup-D91n7iIF.d.mts:513:export { DEFAULT_ABANDON_GRACE_SECS as D, InMemoryPaymentChannelStorage as I, MAX_SAFE_RECLAIMS_PER_TX as M, PaymentChannelRentCleanupManager as P, type RentCleanupCloseResult as R, type PaymentChannelStorage as a, type PaymentChannelOpenWrite as b, type PaymentChannelRecord as c, DEFAULT_MAX_CLOSES_PER_RUN as d, DEFAULT_MAX_RECLAIMS_PER_TX as e, DEFAULT_MAX_TXS_PER_RUN as f, DEFAULT_MAX_TXS_PER_SIGNER as g, type RentCleanupOptions as h, type RentCleanupReclaimResult as i, type RentCleanupStartConfig as j, type RentDiscoveryOptions as k, type RentDiscoveryResult as l, DEFAULT_MAX_IDLE_SECS as m };
+dist/esm/scheme-BcpmRJSH.d.mts:95:declare class ExactSvmScheme implements SchemeNetworkFacilitator {
+dist/esm/scheme-BcpmRJSH.d.mts:217:export { ExactSvmScheme as E, type ExactSvmSchemeOptions as a };
+dist/esm/scheme-BYN0UywL.d.mts:9:declare class ExactSvmScheme implements SchemeNetworkClient {
+dist/esm/scheme-BYN0UywL.d.mts:33:export { ExactSvmScheme as E };
+dist/esm/settlement-cache-jUfefgU-.d.mts:10:declare class SettlementCache {
+dist/esm/settlement-cache-jUfefgU-.d.mts:34:export { SettlementCache as S };
+dist/esm/signer-gUqhJy7y.d.mts:268:declare function toClientSvmSigner(signer: ClientSvmSigner): ClientSvmSigner;
+dist/esm/signer-gUqhJy7y.d.mts:307:declare function toFacilitatorSvmSigner(signer: TransactionSigner & MessagePartialSigner, rpcConfig?: FacilitatorRpcConfig): FacilitatorSvmSigner;
+dist/esm/signer-gUqhJy7y.d.mts:309:export { type ClientSvmSigner as C, type FacilitatorSvmSigner as F, type SvmInnerInstructionsResult as S, type ClientSvmConfig as a, toFacilitatorSvmSigner as b, type FacilitatorAccountInfo as c, type FacilitatorProgramAccount as d, type FacilitatorSimulateTransactionOptions as e, type FacilitatorRpcClient as f, type FacilitatorRpcConfig as g, toClientSvmSigner as t };
+dist/esm/types-CPo7FwL6.d.mts:152:declare function isBatchVoucher(value: unknown): value is BatchVoucher;
+dist/esm/types-CPo7FwL6.d.mts:153:declare function isBatchChannelConfig(value: unknown): value is BatchChannelConfig;
+dist/esm/types-CPo7FwL6.d.mts:154:declare function isBatchPayload(value: unknown): value is BatchPayload;
+dist/esm/types-CPo7FwL6.d.mts:155:declare function isBatchFacilitatorPayload(value: unknown): value is BatchFacilitatorPayload;
+dist/esm/types-CPo7FwL6.d.mts:157:export { type BatchChannelConfig as B, type CloseAuthorization as C, type BatchAuthorization as a, type BatchExtra as b, type BatchAuthorizationPayload as c, type BatchVoucherSigner as d, type BatchVoucher as e, type BatchPayload as f, type BatchDepositPayload as g, type BatchVoucherPayload as h, type BatchRefundPayload as i, type BatchClaimPayload as j, type BatchSettlePayload as k, type BatchVoucherClaim as l, type BatchFacilitatorPayload as m, type BatchChannelState as n, isBatchChannelConfig as o, isBatchPayload as p, isBatchFacilitatorPayload as q, isBatchVoucher as r };
+dist/esm/upto/client/index.d.mts:16:declare class UptoSvmScheme implements SchemeNetworkClient {
+dist/esm/upto/client/index.d.mts:40:export { UptoSvmScheme };
+dist/esm/upto/facilitator/index.d.mts:6:export { D as DEFAULT_ABANDON_GRACE_SECS, d as DEFAULT_MAX_CLOSES_PER_RUN, e as DEFAULT_MAX_RECLAIMS_PER_TX, f as DEFAULT_MAX_TXS_PER_RUN, g as DEFAULT_MAX_TXS_PER_SIGNER, I as InMemoryPaymentChannelStorage, M as MAX_SAFE_RECLAIMS_PER_TX, b as PaymentChannelOpenWrite, c as PaymentChannelRecord, R as RentCleanupCloseResult, h as RentCleanupOptions, i as RentCleanupReclaimResult, j as RentCleanupStartConfig, k as RentDiscoveryOptions, l as RentDiscoveryResult } from '../../rentCleanup-D91n7iIF.mjs';
+dist/esm/upto/facilitator/index.d.mts:41:declare class UptoSvmRentCleanupManager extends PaymentChannelRentCleanupManager {
+dist/esm/upto/facilitator/index.d.mts:51:declare const ERR_SETTLEMENT_EXCEEDS_AMOUNT = "invalid_upto_svm_payload_settlement_exceeds_amount";
+dist/esm/upto/facilitator/index.d.mts:53:declare const ERR_UNEXPECTED_VOUCHER = "invalid_upto_svm_payload_unexpected_voucher";
+dist/esm/upto/facilitator/index.d.mts:55:declare const ERR_CHANNEL_ALREADY_OPEN = "invalid_upto_svm_channel_already_open";
+dist/esm/upto/facilitator/index.d.mts:57:declare const ERR_CHANNEL_LIFETIME_EXCEEDED = "invalid_upto_svm_payload_channel_lifetime_exceeded";
+dist/esm/upto/facilitator/index.d.mts:59:declare const ERR_EXPIRES_AT_MISMATCH = "invalid_upto_svm_payload_expires_at_mismatch";
+dist/esm/upto/facilitator/index.d.mts:61:declare const ERR_AUTHORIZER_NOT_CONFIGURED = "invalid_upto_svm_authorizer_not_configured";
+dist/esm/upto/facilitator/index.d.mts:63:declare const ERR_AUTHORIZER_ADDRESS_MISMATCH = "invalid_upto_svm_authorizer_address_mismatch";
+dist/esm/upto/facilitator/index.d.mts:65:declare const ERR_DELEGATED_SETTLE_UNAUTHENTICATED = "invalid_upto_svm_delegated_settle_unauthenticated";
+dist/esm/upto/facilitator/index.d.mts:67:declare const ERR_DELEGATED_AUTH_STORE = "invalid_upto_svm_delegated_auth_store";
+dist/esm/upto/facilitator/index.d.mts:69:declare const ERR_PAYLOAD_TYPE = "invalid_upto_svm_payload_type";
+dist/esm/upto/facilitator/index.d.mts:71:declare const DEFAULT_MAX_CHANNEL_LIFETIME_SECS = 3600;
+dist/esm/upto/facilitator/index.d.mts:207:declare class UptoSvmScheme implements SchemeNetworkFacilitator {
+dist/esm/upto/facilitator/index.d.mts:405:declare const ErrSettlementPending = "settlement_pending";
+dist/esm/upto/facilitator/index.d.mts:425:declare const DEFAULT_CHANNEL_READ_MAX_ATTEMPTS = 6;
+dist/esm/upto/facilitator/index.d.mts:426:declare const DEFAULT_CHANNEL_READ_BACKOFF_STEP_MS = 200;
+dist/esm/upto/facilitator/index.d.mts:437:declare class ChannelBroadcastConfirmationError extends Error {
+dist/esm/upto/facilitator/index.d.mts:451:declare class ChannelSimulationError extends Error {
+dist/esm/upto/facilitator/index.d.mts:462:declare class SettlementConfirmationTimeoutError extends Error {
+dist/esm/upto/facilitator/index.d.mts:472:export { ChannelBroadcastConfirmationError as ChannelOpenConfirmationError, DEFAULT_CHANNEL_READ_BACKOFF_STEP_MS, DEFAULT_CHANNEL_READ_MAX_ATTEMPTS, DEFAULT_MAX_CHANNEL_LIFETIME_SECS, ERR_AUTHORIZER_ADDRESS_MISMATCH, ERR_AUTHORIZER_NOT_CONFIGURED, ERR_CHANNEL_ALREADY_OPEN, ERR_CHANNEL_LIFETIME_EXCEEDED, ERR_DELEGATED_AUTH_STORE, ERR_DELEGATED_SETTLE_UNAUTHENTICATED, ERR_EXPIRES_AT_MISMATCH, ERR_PAYLOAD_TYPE, ERR_SETTLEMENT_EXCEEDS_AMOUNT, ERR_UNEXPECTED_VOUCHER, ErrSettlementPending, PaymentChannelStorage, SettlementConfirmationTimeoutError, ChannelSimulationError as SettlementSimulationError, type UptoDelegatedSettleContext, type UptoSvmFacilitatorConfig, UptoSvmRentCleanupManager, type UptoSvmRentCleanupManagerConfig, UptoSvmScheme, type PaymentChannelSvmSigner as UptoSvmSigner };
+dist/esm/upto/server/index.d.mts:37:declare class UptoSvmScheme implements SchemeNetworkServer {
+dist/esm/upto/server/index.d.mts:145:export { UptoSvmScheme, type UptoSvmServerOptions };
+dist/esm/v1/index.d.mts:1:export { ExactSvmSchemeV1 } from '../exact/v1/client/index.mjs';
+dist/esm/v1/index.d.mts:11:declare const NETWORKS: string[];
+dist/esm/v1/index.d.mts:13:export { NETWORKS };

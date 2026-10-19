@@ -1,0 +1,315 @@
+### @x402/core@2.28.0
+### from: node_modules/.pnpm/@x402+core@2.28.0/node_modules/@x402/core
+### type files found: 22
+
+### legal import paths
+{
+  ".": {
+    "import": {
+      "types": "./dist/esm/index.d.mts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.js"
+    }
+  },
+  "./client": {
+    "import": {
+      "types": "./dist/esm/client/index.d.mts",
+      "default": "./dist/esm/client/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/client/index.d.ts",
+      "default": "./dist/cjs/client/index.js"
+    }
+  },
+  "./facilitator": {
+    "import": {
+      "types": "./dist/esm/facilitator/index.d.mts",
+      "default": "./dist/esm/facilitator/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/facilitator/index.d.ts",
+      "default": "./dist/cjs/facilitator/index.js"
+    }
+  },
+  "./http": {
+    "import": {
+      "types": "./dist/esm/http/index.d.mts",
+      "default": "./dist/esm/http/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/http/index.d.ts",
+      "default": "./dist/cjs/http/index.js"
+    }
+  },
+  "./server": {
+    "import": {
+      "types": "./dist/esm/server/index.d.mts",
+      "default": "./dist/esm/server/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/server/index.d.ts",
+      "default": "./dist/cjs/server/index.js"
+    }
+  },
+  "./types": {
+    "import": {
+      "types": "./dist/esm/types/index.d.mts",
+      "default": "./dist/esm/types/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/types/index.d.ts",
+      "default": "./dist/cjs/types/index.js"
+    }
+  },
+  "./types/v1": {
+    "import": {
+      "types": "./dist/esm/types/v1/index.d.mts",
+      "default": "./dist/esm/types/v1/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/types/v1/index.d.ts",
+      "default": "./dist/cjs/types/v1/index.js"
+    }
+  },
+  "./utils": {
+    "import": {
+      "types": "./dist/esm/utils/index.d.mts",
+      "default": "./dist/esm/utils/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/utils/index.d.ts",
+      "default": "./dist/cjs/utils/index.js"
+    }
+  },
+  "./schemas": {
+    "import": {
+      "types": "./dist/esm/schemas/index.d.mts",
+      "default": "./dist/esm/schemas/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/schemas/index.d.ts",
+      "default": "./dist/cjs/schemas/index.js"
+    }
+  }
+}
+
+### exported symbols
+dist/cjs/backgroundInit-CJlb-S48.d.ts:11:declare function isFatalStartupInitError(error: unknown): boolean;
+dist/cjs/backgroundInit-CJlb-S48.d.ts:21:declare function attachBackgroundInitHandler(initPromise: Promise<void> | null): void;
+dist/cjs/backgroundInit-CJlb-S48.d.ts:23:export { attachBackgroundInitHandler as a, isFatalStartupInitError as i };
+dist/cjs/client/index.d.ts:2:export { av as AfterPaymentCreationHook, au as BeforePaymentCreationHook, aC as ClientExtension, aA as ClientExtensionHooks, aB as ClientTransportExtensionHooks, aE as DEFAULT_MAX_AMOUNT_PER_PAYMENT, aw as OnPaymentCreationFailureHook, ay as OnPaymentResponseHook, as as PaymentCreatedContext, ar as PaymentCreationContext, at as PaymentCreationFailureContext, aD as PaymentPolicy, ax as PaymentResponseContext, aH as SchemeRegistration, az as SelectPaymentRequirements, aF as SpendControlAsset, aG as SpendControls, aI as x402ClientConfig } from '../x402Client-C7_OogbK.js';
+dist/cjs/client/index.d.ts:29:declare class x402HTTPClient {
+dist/cjs/client/index.d.ts:151:export { type HTTPClientExtensionHooks, type HTTPPaymentStatus, type HTTPResourceResponse, type PaymentRequiredContext, type PaymentRequiredHook, x402Client, x402HTTPClient };
+dist/cjs/facilitator/index.d.ts:51:declare class x402Facilitator {
+dist/cjs/facilitator/index.d.ts:212:declare const PENDING_SETTLEMENT_TTL_MS: number;
+dist/cjs/facilitator/index.d.ts:274:declare class InMemoryPendingSettlementStore implements PendingSettlementStore {
+dist/cjs/facilitator/index.d.ts:309:export { type FacilitatorAfterSettleHook, type FacilitatorAfterVerifyHook, type FacilitatorBeforeSettleHook, type FacilitatorBeforeVerifyHook, type FacilitatorOnSettleFailureHook, type FacilitatorOnVerifyFailureHook, type FacilitatorSettleContext, type FacilitatorSettleFailureContext, type FacilitatorSettleResultContext, type FacilitatorVerifyContext, type FacilitatorVerifyFailureContext, type FacilitatorVerifyResultContext, InMemoryPendingSettlementStore, PENDING_SETTLEMENT_TTL_MS, type PendingSettlementStore, x402Facilitator };
+dist/cjs/http/index.d.ts:2:export { C as CompiledRoute, D as DynamicPayTo, j as DynamicPrice, E as FacilitatorCapabilityError, F as FacilitatorClient, z as FacilitatorConfig, A as FacilitatorResponseError, B as FacilitatorTimeoutError, H as HTTPAdapter, y as HTTPFacilitatorClient, e as HTTPProcessResult, b as HTTPRequestContext, s as HTTPResourceServerExtensionHooks, k as HTTPResponseBody, d as HTTPResponseInstructions, c as HTTPTransportContext, v as PAYMENT_REQUIRED_CACHE_CONTROL, h as PaymentOption, f as PaywallConfig, g as PaywallProvider, o as ProcessSettleFailureResponse, m as ProcessSettleResultResponse, n as ProcessSettleSuccessResponse, r as ProtectedRequestHook, t as ResourceServerTransportExtensionHooks, R as RouteConfig, q as RouteConfigurationError, p as RouteValidationError, i as RoutesConfig, u as SETTLEMENT_OVERRIDES_HEADER, l as SettlementFailedResponseBody, U as UnpaidResponseBody, G as getFacilitatorResponseError, w as withPrivateCacheControl, x as x402HTTPResourceServer } from '../x402Client-C7_OogbK.js';
+dist/cjs/http/index.d.ts:3:export { a as attachBackgroundInitHandler, i as isFatalStartupInitError } from '../backgroundInit-CJlb-S48.js';
+dist/cjs/http/index.d.ts:4:export { HTTPClientExtensionHooks, HTTPPaymentStatus, HTTPResourceResponse, PaymentRequiredContext, PaymentRequiredHook, x402HTTPClient } from '../client/index.js';
+dist/cjs/http/index.d.ts:14:declare function encodePaymentSignatureHeader(paymentPayload: PaymentPayload): string;
+dist/cjs/http/index.d.ts:21:declare function decodePaymentSignatureHeader(paymentSignatureHeader: string): PaymentPayload;
+dist/cjs/http/index.d.ts:28:declare function encodePaymentRequiredHeader(paymentRequired: PaymentRequired): string;
+dist/cjs/http/index.d.ts:35:declare function decodePaymentRequiredHeader(paymentRequiredHeader: string): PaymentRequired;
+dist/cjs/http/index.d.ts:42:declare function encodePaymentResponseHeader(paymentResponse: SettleResponse): string;
+dist/cjs/http/index.d.ts:49:declare function decodePaymentResponseHeader(paymentResponseHeader: string): SettleResponse;
+dist/cjs/http/index.d.ts:51:export { type BodyMethods, type QueryParamMethods, decodePaymentRequiredHeader, decodePaymentResponseHeader, decodePaymentSignatureHeader, encodePaymentRequiredHeader, encodePaymentResponseHeader, encodePaymentSignatureHeader };
+dist/cjs/index.d.ts:1:declare const x402Version = 2;
+dist/cjs/index.d.ts:3:export { x402Version };
+dist/cjs/schemas/index.d.ts:2:export { z } from 'zod';
+dist/cjs/schemas/index.d.ts:8:declare const NonEmptyString: z.ZodString;
+dist/cjs/schemas/index.d.ts:14:declare const Any: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+dist/cjs/schemas/index.d.ts:20:declare const OptionalAny: z.ZodNullable<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
+dist/cjs/schemas/index.d.ts:26:declare const NetworkSchemaV1: z.ZodString;
+dist/cjs/schemas/index.d.ts:32:declare const NetworkSchemaV2: z.ZodEffects<z.ZodString, string, string>;
+dist/cjs/schemas/index.d.ts:37:declare const NetworkSchema: z.ZodUnion<[z.ZodString, z.ZodEffects<z.ZodString, string, string>]>;
+dist/cjs/schemas/index.d.ts:39:declare const ResourceInfoSchema: z.ZodObject<{
+dist/cjs/schemas/index.d.ts:66:declare const PaymentRequirementsV1Schema: z.ZodObject<{
+dist/cjs/schemas/index.d.ts:108:declare const PaymentRequiredV1Schema: z.ZodObject<{
+dist/cjs/schemas/index.d.ts:186:declare const PaymentPayloadV1Schema: z.ZodObject<{
+dist/cjs/schemas/index.d.ts:207:declare const PaymentRequirementsV2Schema: z.ZodObject<{
+dist/cjs/schemas/index.d.ts:237:declare const PaymentRequiredV2Schema: z.ZodObject<{
+dist/cjs/schemas/index.d.ts:336:declare const PaymentPayloadV2Schema: z.ZodObject<{
+dist/cjs/schemas/index.d.ts:449:declare const PaymentRequirementsSchema: z.ZodUnion<[z.ZodObject<{
+dist/cjs/schemas/index.d.ts:515:declare const PaymentRequiredSchema: z.ZodDiscriminatedUnion<"x402Version", [z.ZodObject<{
+dist/cjs/schemas/index.d.ts:686:declare const PaymentPayloadSchema: z.ZodDiscriminatedUnion<"x402Version", [z.ZodObject<{
+dist/cjs/schemas/index.d.ts:816:declare function parsePaymentRequired(value: unknown): z.SafeParseReturnType<unknown, PaymentRequired>;
+dist/cjs/schemas/index.d.ts:824:declare function validatePaymentRequired(value: unknown): PaymentRequired;
+dist/cjs/schemas/index.d.ts:831:declare function isPaymentRequired(value: unknown): value is PaymentRequired;
+dist/cjs/schemas/index.d.ts:838:declare function parsePaymentRequirements(value: unknown): z.SafeParseReturnType<unknown, PaymentRequirements>;
+dist/cjs/schemas/index.d.ts:846:declare function validatePaymentRequirements(value: unknown): PaymentRequirements;
+dist/cjs/schemas/index.d.ts:853:declare function isPaymentRequirements(value: unknown): value is PaymentRequirements;
+dist/cjs/schemas/index.d.ts:860:declare function parsePaymentPayload(value: unknown): z.SafeParseReturnType<unknown, PaymentPayload>;
+dist/cjs/schemas/index.d.ts:868:declare function validatePaymentPayload(value: unknown): PaymentPayload;
+dist/cjs/schemas/index.d.ts:875:declare function isPaymentPayload(value: unknown): value is PaymentPayload;
+dist/cjs/schemas/index.d.ts:882:declare function isPaymentRequiredV1(value: unknown): value is PaymentRequiredV1;
+dist/cjs/schemas/index.d.ts:889:declare function isPaymentRequiredV2(value: unknown): value is PaymentRequiredV2;
+dist/cjs/schemas/index.d.ts:896:declare function isPaymentRequirementsV1(value: unknown): value is PaymentRequirementsV1;
+dist/cjs/schemas/index.d.ts:903:declare function isPaymentRequirementsV2(value: unknown): value is PaymentRequirementsV2;
+dist/cjs/schemas/index.d.ts:910:declare function isPaymentPayloadV1(value: unknown): value is PaymentPayloadV1;
+dist/cjs/schemas/index.d.ts:917:declare function isPaymentPayloadV2(value: unknown): value is PaymentPayloadV2;
+dist/cjs/schemas/index.d.ts:919:export { Any, type Network, NetworkSchema, NetworkSchemaV1, NetworkSchemaV2, type NetworkV1, type NetworkV2, NonEmptyString, OptionalAny, type PaymentPayload, PaymentPayloadSchema, type PaymentPayloadV1, PaymentPayloadV1Schema, type PaymentPayloadV2, PaymentPayloadV2Schema, type PaymentRequired, PaymentRequiredSchema, type PaymentRequiredV1, PaymentRequiredV1Schema, type PaymentRequiredV2, PaymentRequiredV2Schema, type PaymentRequirements, PaymentRequirementsSchema, type PaymentRequirementsV1, PaymentRequirementsV1Schema, type PaymentRequirementsV2, PaymentRequirementsV2Schema, type ResourceInfo, ResourceInfoSchema, isPaymentPayload, isPaymentPayloadV1, isPaymentPayloadV2, isPaymentRequired, isPaymentRequiredV1, isPaymentRequiredV2, isPaymentRequirements, isPaymentRequirementsV1, isPaymentRequirementsV2, parsePaymentPayload, parsePaymentRequired, parsePaymentRequirements, validatePaymentPayload, validatePaymentRequired, validatePaymentRequirements };
+dist/cjs/server/index.d.ts:2:export { ah as AfterSettleHook, ae as AfterVerifyHook, ag as BeforeSettleHook, ad as BeforeVerifyHook, C as CompiledRoute, a8 as CompletedSettlement, aa as ExtensionValidationResult, E as FacilitatorCapabilityError, F as FacilitatorClient, z as FacilitatorConfig, A as FacilitatorResponseError, B as FacilitatorTimeoutError, H as HTTPAdapter, y as HTTPFacilitatorClient, e as HTTPProcessResult, b as HTTPRequestContext, k as HTTPResponseBody, d as HTTPResponseInstructions, c as HTTPTransportContext, ai as OnSettleFailureHook, aj as OnVerifiedPaymentCanceledHook, af as OnVerifyFailureHook, v as PAYMENT_REQUIRED_CACHE_CONTROL, a7 as PaymentCancellationDispatcher, ao as PaymentFlowConfig, Y as PaymentRequiredContext, f as PaywallConfig, g as PaywallProvider, o as ProcessSettleFailureResponse, m as ProcessSettleResultResponse, n as ProcessSettleSuccessResponse, r as ProtectedRequestHook, X as ResourceConfig, ac as ResourceVerifyRespone, R as RouteConfig, q as RouteConfigurationError, p as RouteValidationError, i as RoutesConfig, u as SETTLEMENT_OVERRIDES_HEADER, ak as SchemeEnrichPaymentRequiredResponseHook, am as SchemeEnrichSettlementPayloadHook, an as SchemeEnrichSettlementResponseHook, al as SchemePaymentRequiredContext, a0 as SettleContext, a2 as SettleFailureContext, a3 as SettlePhase, a1 as SettleResultContext, l as SettlementFailedResponseBody, a9 as SettlementOverrides, ab as SkipHandlerDirective, U as UnpaidResponseBody, a6 as VerifiedPaymentCancelOptions, a4 as VerifiedPaymentCanceledContext, a5 as VerifiedPaymentCancellationReason, Z as VerifyContext, $ as VerifyFailureContext, _ as VerifyResultContext, ap as checkIfBazaarNeeded, G as getFacilitatorResponseError, w as withPrivateCacheControl, x as x402HTTPResourceServer, W as x402ResourceServer } from '../x402Client-C7_OogbK.js';
+dist/cjs/server/index.d.ts:3:export { a as attachBackgroundInitHandler, i as isFatalStartupInitError } from '../backgroundInit-CJlb-S48.js';
+dist/cjs/server/index.d.ts:9:declare const SDK_DEFAULT_ASSET_TRANSFER_METHOD = "default";
+dist/cjs/server/index.d.ts:17:declare const PAYMENT_FLOWS: Record<PaymentFlowName, PaymentFlowPhases>;
+dist/cjs/server/index.d.ts:28:declare function resolvePaymentFlow(scheme: Pick<SchemeNetworkServer, "defaultAssetTransferMethod" | "paymentFlows" | "scheme">, requirements: DeepReadonly<PaymentRequirements>): {
+dist/cjs/server/index.d.ts:44:declare function applyPaymentFlowWireExtra(extra: Record<string, unknown>, resolved: {
+dist/cjs/server/index.d.ts:55:declare function resolvePaymentFlowPhases(flow: PaymentFlowName): PaymentFlowPhases;
+dist/cjs/server/index.d.ts:69:declare function resolveFailurePathSettlement(cancelSettlement: SettleResponse | void | undefined, beforeHandlerSettlement?: {
+dist/cjs/server/index.d.ts:79:declare function isVacantStringField(value: string): boolean;
+dist/cjs/server/index.d.ts:86:declare function snapshotPaymentRequirementsList(requirements: PaymentRequirements[]): PaymentRequirements[];
+dist/cjs/server/index.d.ts:101:declare function assertAcceptsAllowlistedAfterExtensionEnrich(baseline: PaymentRequirements[], current: PaymentRequirements[], extensionKey: string): void;
+dist/cjs/server/index.d.ts:113:declare function assertAcceptsAdditiveExtraAfterSchemeEnrich(baseline: PaymentRequirements[], current: PaymentRequirements[], scheme: string, network: string): void;
+dist/cjs/server/index.d.ts:124:declare function snapshotSettleResponseCore(result: SettleResponse): SettleResponseCoreSnapshot;
+dist/cjs/server/index.d.ts:134:declare function assertSettleResponseCoreUnchanged(before: SettleResponseCoreSnapshot, after: SettleResponse, extensionKey: string): void;
+dist/cjs/server/index.d.ts:142:declare function assertAdditivePayloadEnrichment(payload: Record<string, unknown>, enrichment: Record<string, unknown>, callerLabel: string): void;
+dist/cjs/server/index.d.ts:151:declare function assertAdditiveSettlementExtra(extra: Record<string, unknown>, enrichment: Record<string, unknown>, callerLabel: string): void;
+dist/cjs/server/index.d.ts:153:export { PAYMENT_FLOWS, PaymentFlowName, PaymentFlowPhases, SDK_DEFAULT_ASSET_TRANSFER_METHOD, type SettleResponseCoreSnapshot, applyPaymentFlowWireExtra, assertAcceptsAdditiveExtraAfterSchemeEnrich, assertAcceptsAllowlistedAfterExtensionEnrich, assertAdditivePayloadEnrichment, assertAdditiveSettlementExtra, assertSettleResponseCoreUnchanged, isVacantStringField, resolveFailurePathSettlement, resolvePaymentFlow, resolvePaymentFlowPhases, snapshotPaymentRequirementsList, snapshotSettleResponseCore };
+dist/cjs/types/index.d.ts:1:export { aQ as AssetAmount, T as DeepReadonly, b4 as DefaultAsset, b5 as DefaultAssetTable, E as FacilitatorCapabilityError, b3 as FacilitatorContext, K as FacilitatorExtension, A as FacilitatorResponseError, B as FacilitatorTimeoutError, b7 as FindDefaultAsset, b6 as GetDefaultAsset, s as HTTPResourceServerExtensionHooks, M as Money, b0 as MoneyParser, N as Network, ao as PaymentFlowConfig, L as PaymentFlowName, O as PaymentFlowPhases, P as PaymentPayload, b2 as PaymentPayloadContext, b1 as PaymentPayloadResult, aL as PaymentPayloadV1, a as PaymentRequired, Y as PaymentRequiredContext, aK as PaymentRequiredV1, I as PaymentRequirements, aJ as PaymentRequirementsV1, aR as Price, aY as ResourceInfo, b8 as ResourceServerExtension, b9 as ResourceServerExtensionHooks, t as ResourceServerTransportExtensionHooks, a_ as SchemeClientHooks, ak as SchemeEnrichPaymentRequiredResponseHook, aZ as SchemeNetworkClient, J as SchemeNetworkFacilitator, Q as SchemeNetworkServer, al as SchemePaymentRequiredContext, a$ as SchemeServerHooks, a0 as SettleContext, aX as SettleError, a2 as SettleFailureContext, aT as SettleRequest, S as SettleResponse, a1 as SettleResultContext, aV as SupportedKind, aU as SupportedResponse, a4 as VerifiedPaymentCanceledContext, Z as VerifyContext, aW as VerifyError, $ as VerifyFailureContext, aS as VerifyRequest, V as VerifyResponse, _ as VerifyResultContext, G as getFacilitatorResponseError } from '../x402Client-C7_OogbK.js';
+dist/cjs/types/v1/index.d.ts:1:export { aL as PaymentPayloadV1, aK as PaymentRequiredV1, aJ as PaymentRequirementsV1, aN as SettleRequestV1, aO as SettleResponseV1, aP as SupportedResponseV1, aM as VerifyRequestV1 } from '../../x402Client-C7_OogbK.js';
+dist/cjs/utils/index.d.ts:12:declare function numberToDecimalString(n: number): string;
+dist/cjs/utils/index.d.ts:21:declare function parseMoneyString(money: string): string;
+dist/cjs/utils/index.d.ts:33:declare function parseMoney(money: Money): {
+dist/cjs/utils/index.d.ts:46:declare function convertToTokenAmount(decimalAmount: string, decimals: number): string;
+dist/cjs/utils/index.d.ts:55:declare const networkMatchesPattern: (pattern: Network, network: Network) => boolean;
+dist/cjs/utils/index.d.ts:56:declare const findSchemesByNetwork: <T>(map: Map<string, Map<string, T>>, network: Network) => Map<string, T> | undefined;
+dist/cjs/utils/index.d.ts:57:declare const findByNetworkAndScheme: <T>(map: Map<string, Map<string, T>>, scheme: string, network: Network) => T | undefined;
+dist/cjs/utils/index.d.ts:67:declare const findFacilitatorBySchemeAndNetwork: <T>(schemeMap: Map<string, SchemeData<T>>, scheme: string, network: Network) => T | undefined;
+dist/cjs/utils/index.d.ts:68:declare const Base64EncodedRegex: RegExp;
+dist/cjs/utils/index.d.ts:75:declare function safeBase64Encode(data: string): string;
+dist/cjs/utils/index.d.ts:82:declare function safeBase64Decode(data: string): string;
+dist/cjs/utils/index.d.ts:91:declare function deepEqual(obj1: unknown, obj2: unknown): boolean;
+dist/cjs/utils/index.d.ts:102:declare function toComparableArray(value: unknown): unknown[] | undefined;
+dist/cjs/utils/index.d.ts:112:declare const ADDITIVE_ARRAY_INFO_FIELDS: Record<string, ReadonlySet<string>>;
+dist/cjs/utils/index.d.ts:119:declare const SERVER_OWNED_INFO_FIELDS: Record<string, ReadonlySet<string>>;
+dist/cjs/utils/index.d.ts:131:declare const ADDITIVE_ARRAY_MAX_LENGTHS: Record<string, Record<string, number>>;
+dist/cjs/utils/index.d.ts:133:export { ADDITIVE_ARRAY_INFO_FIELDS, ADDITIVE_ARRAY_MAX_LENGTHS, Base64EncodedRegex, SERVER_OWNED_INFO_FIELDS, type SchemeData, convertToTokenAmount, deepEqual, findByNetworkAndScheme, findFacilitatorBySchemeAndNetwork, findSchemesByNetwork, networkMatchesPattern, numberToDecimalString, parseMoney, parseMoneyString, safeBase64Decode, safeBase64Encode, toComparableArray };
+dist/cjs/x402Client-C7_OogbK.d.ts:130:declare class HTTPFacilitatorClient implements FacilitatorClient {
+dist/cjs/x402Client-C7_OogbK.d.ts:382:declare class x402ResourceServer {
+dist/cjs/x402Client-C7_OogbK.d.ts:755:declare const SETTLEMENT_OVERRIDES_HEADER = "Settlement-Overrides";
+dist/cjs/x402Client-C7_OogbK.d.ts:756:declare const PAYMENT_REQUIRED_CACHE_CONTROL = "no-store";
+dist/cjs/x402Client-C7_OogbK.d.ts:764:declare function withPrivateCacheControl(value: string | null): string;
+dist/cjs/x402Client-C7_OogbK.d.ts:906:declare function checkIfBazaarNeeded(routes: RoutesConfig): boolean;
+dist/cjs/x402Client-C7_OogbK.d.ts:1023:declare class RouteConfigurationError extends Error {
+dist/cjs/x402Client-C7_OogbK.d.ts:1037:declare class x402HTTPResourceServer {
+dist/cjs/x402Client-C7_OogbK.d.ts:1445:declare class VerifyError extends Error {
+dist/cjs/x402Client-C7_OogbK.d.ts:1461:declare class SettleError extends Error {
+dist/cjs/x402Client-C7_OogbK.d.ts:1479:declare class FacilitatorResponseError extends Error {
+dist/cjs/x402Client-C7_OogbK.d.ts:1498:declare class FacilitatorTimeoutError extends FacilitatorResponseError {
+dist/cjs/x402Client-C7_OogbK.d.ts:1515:declare class FacilitatorCapabilityError extends Error {
+dist/cjs/x402Client-C7_OogbK.d.ts:1531:declare function getFacilitatorResponseError(error: unknown): FacilitatorResponseError | null;
+dist/cjs/x402Client-C7_OogbK.d.ts:1883:declare const DEFAULT_MAX_AMOUNT_PER_PAYMENT: Money;
+dist/cjs/x402Client-C7_OogbK.d.ts:1967:declare class x402Client {
+dist/cjs/x402Client-C7_OogbK.d.ts:2186:export { type VerifyFailureContext as $, FacilitatorResponseError as A, FacilitatorTimeoutError as B, type CompiledRoute as C, type DynamicPayTo as D, FacilitatorCapabilityError as E, type FacilitatorClient as F, getFacilitatorResponseError as G, type HTTPAdapter as H, type PaymentRequirements as I, type SchemeNetworkFacilitator as J, type FacilitatorExtension as K, type PaymentFlowName as L, type Money as M, type Network as N, type PaymentFlowPhases as O, type PaymentPayload as P, type SchemeNetworkServer as Q, type RouteConfig as R, type SettleResponse as S, type DeepReadonly as T, type UnpaidResponseBody as U, type VerifyResponse as V, x402ResourceServer as W, type ResourceConfig as X, type PaymentRequiredContext as Y, type VerifyContext as Z, type VerifyResultContext as _, type PaymentRequired as a, type SchemeServerHooks as a$, type SettleContext as a0, type SettleResultContext as a1, type SettleFailureContext as a2, type SettlePhase as a3, type VerifiedPaymentCanceledContext as a4, type VerifiedPaymentCancellationReason as a5, type VerifiedPaymentCancelOptions as a6, type PaymentCancellationDispatcher as a7, type CompletedSettlement as a8, type SettlementOverrides as a9, type ClientExtensionHooks as aA, type ClientTransportExtensionHooks as aB, type ClientExtension as aC, type PaymentPolicy as aD, DEFAULT_MAX_AMOUNT_PER_PAYMENT as aE, type SpendControlAsset as aF, type SpendControls as aG, type SchemeRegistration as aH, type x402ClientConfig as aI, type PaymentRequirementsV1 as aJ, type PaymentRequiredV1 as aK, type PaymentPayloadV1 as aL, type VerifyRequestV1 as aM, type SettleRequestV1 as aN, type SettleResponseV1 as aO, type SupportedResponseV1 as aP, type AssetAmount as aQ, type Price as aR, type VerifyRequest as aS, type SettleRequest as aT, type SupportedResponse as aU, type SupportedKind as aV, VerifyError as aW, SettleError as aX, type ResourceInfo as aY, type SchemeNetworkClient as aZ, type SchemeClientHooks as a_, type ExtensionValidationResult as aa, type SkipHandlerDirective as ab, type ResourceVerifyRespone as ac, type BeforeVerifyHook as ad, type AfterVerifyHook as ae, type OnVerifyFailureHook as af, type BeforeSettleHook as ag, type AfterSettleHook as ah, type OnSettleFailureHook as ai, type OnVerifiedPaymentCanceledHook as aj, type SchemeEnrichPaymentRequiredResponseHook as ak, type SchemePaymentRequiredContext as al, type SchemeEnrichSettlementPayloadHook as am, type SchemeEnrichSettlementResponseHook as an, type PaymentFlowConfig as ao, checkIfBazaarNeeded as ap, x402Client as aq, type PaymentCreationContext as ar, type PaymentCreatedContext as as, type PaymentCreationFailureContext as at, type BeforePaymentCreationHook as au, type AfterPaymentCreationHook as av, type OnPaymentCreationFailureHook as aw, type PaymentResponseContext as ax, type OnPaymentResponseHook as ay, type SelectPaymentRequirements as az, type HTTPRequestContext as b, type MoneyParser as b0, type PaymentPayloadResult as b1, type PaymentPayloadContext as b2, type FacilitatorContext as b3, type DefaultAsset as b4, type DefaultAssetTable as b5, type GetDefaultAsset as b6, type FindDefaultAsset as b7, type ResourceServerExtension as b8, type ResourceServerExtensionHooks as b9, type HTTPTransportContext as c, type HTTPResponseInstructions as d, type HTTPProcessResult as e, type PaywallConfig as f, type PaywallProvider as g, type PaymentOption as h, type RoutesConfig as i, type DynamicPrice as j, type HTTPResponseBody as k, type SettlementFailedResponseBody as l, type ProcessSettleResultResponse as m, type ProcessSettleSuccessResponse as n, type ProcessSettleFailureResponse as o, type RouteValidationError as p, RouteConfigurationError as q, type ProtectedRequestHook as r, type HTTPResourceServerExtensionHooks as s, type ResourceServerTransportExtensionHooks as t, SETTLEMENT_OVERRIDES_HEADER as u, PAYMENT_REQUIRED_CACHE_CONTROL as v, withPrivateCacheControl as w, x402HTTPResourceServer as x, HTTPFacilitatorClient as y, type FacilitatorConfig as z };
+dist/esm/backgroundInit-CJlb-S48.d.mts:11:declare function isFatalStartupInitError(error: unknown): boolean;
+dist/esm/backgroundInit-CJlb-S48.d.mts:21:declare function attachBackgroundInitHandler(initPromise: Promise<void> | null): void;
+dist/esm/backgroundInit-CJlb-S48.d.mts:23:export { attachBackgroundInitHandler as a, isFatalStartupInitError as i };
+dist/esm/client/index.d.mts:2:export { av as AfterPaymentCreationHook, au as BeforePaymentCreationHook, aC as ClientExtension, aA as ClientExtensionHooks, aB as ClientTransportExtensionHooks, aE as DEFAULT_MAX_AMOUNT_PER_PAYMENT, aw as OnPaymentCreationFailureHook, ay as OnPaymentResponseHook, as as PaymentCreatedContext, ar as PaymentCreationContext, at as PaymentCreationFailureContext, aD as PaymentPolicy, ax as PaymentResponseContext, aH as SchemeRegistration, az as SelectPaymentRequirements, aF as SpendControlAsset, aG as SpendControls, aI as x402ClientConfig } from '../x402Client-C7_OogbK.mjs';
+dist/esm/client/index.d.mts:29:declare class x402HTTPClient {
+dist/esm/client/index.d.mts:151:export { type HTTPClientExtensionHooks, type HTTPPaymentStatus, type HTTPResourceResponse, type PaymentRequiredContext, type PaymentRequiredHook, x402Client, x402HTTPClient };
+dist/esm/facilitator/index.d.mts:51:declare class x402Facilitator {
+dist/esm/facilitator/index.d.mts:212:declare const PENDING_SETTLEMENT_TTL_MS: number;
+dist/esm/facilitator/index.d.mts:274:declare class InMemoryPendingSettlementStore implements PendingSettlementStore {
+dist/esm/facilitator/index.d.mts:309:export { type FacilitatorAfterSettleHook, type FacilitatorAfterVerifyHook, type FacilitatorBeforeSettleHook, type FacilitatorBeforeVerifyHook, type FacilitatorOnSettleFailureHook, type FacilitatorOnVerifyFailureHook, type FacilitatorSettleContext, type FacilitatorSettleFailureContext, type FacilitatorSettleResultContext, type FacilitatorVerifyContext, type FacilitatorVerifyFailureContext, type FacilitatorVerifyResultContext, InMemoryPendingSettlementStore, PENDING_SETTLEMENT_TTL_MS, type PendingSettlementStore, x402Facilitator };
+dist/esm/http/index.d.mts:2:export { C as CompiledRoute, D as DynamicPayTo, j as DynamicPrice, E as FacilitatorCapabilityError, F as FacilitatorClient, z as FacilitatorConfig, A as FacilitatorResponseError, B as FacilitatorTimeoutError, H as HTTPAdapter, y as HTTPFacilitatorClient, e as HTTPProcessResult, b as HTTPRequestContext, s as HTTPResourceServerExtensionHooks, k as HTTPResponseBody, d as HTTPResponseInstructions, c as HTTPTransportContext, v as PAYMENT_REQUIRED_CACHE_CONTROL, h as PaymentOption, f as PaywallConfig, g as PaywallProvider, o as ProcessSettleFailureResponse, m as ProcessSettleResultResponse, n as ProcessSettleSuccessResponse, r as ProtectedRequestHook, t as ResourceServerTransportExtensionHooks, R as RouteConfig, q as RouteConfigurationError, p as RouteValidationError, i as RoutesConfig, u as SETTLEMENT_OVERRIDES_HEADER, l as SettlementFailedResponseBody, U as UnpaidResponseBody, G as getFacilitatorResponseError, w as withPrivateCacheControl, x as x402HTTPResourceServer } from '../x402Client-C7_OogbK.mjs';
+dist/esm/http/index.d.mts:3:export { a as attachBackgroundInitHandler, i as isFatalStartupInitError } from '../backgroundInit-CJlb-S48.mjs';
+dist/esm/http/index.d.mts:4:export { HTTPClientExtensionHooks, HTTPPaymentStatus, HTTPResourceResponse, PaymentRequiredContext, PaymentRequiredHook, x402HTTPClient } from '../client/index.mjs';
+dist/esm/http/index.d.mts:14:declare function encodePaymentSignatureHeader(paymentPayload: PaymentPayload): string;
+dist/esm/http/index.d.mts:21:declare function decodePaymentSignatureHeader(paymentSignatureHeader: string): PaymentPayload;
+dist/esm/http/index.d.mts:28:declare function encodePaymentRequiredHeader(paymentRequired: PaymentRequired): string;
+dist/esm/http/index.d.mts:35:declare function decodePaymentRequiredHeader(paymentRequiredHeader: string): PaymentRequired;
+dist/esm/http/index.d.mts:42:declare function encodePaymentResponseHeader(paymentResponse: SettleResponse): string;
+dist/esm/http/index.d.mts:49:declare function decodePaymentResponseHeader(paymentResponseHeader: string): SettleResponse;
+dist/esm/http/index.d.mts:51:export { type BodyMethods, type QueryParamMethods, decodePaymentRequiredHeader, decodePaymentResponseHeader, decodePaymentSignatureHeader, encodePaymentRequiredHeader, encodePaymentResponseHeader, encodePaymentSignatureHeader };
+dist/esm/index.d.mts:1:declare const x402Version = 2;
+dist/esm/index.d.mts:3:export { x402Version };
+dist/esm/schemas/index.d.mts:2:export { z } from 'zod';
+dist/esm/schemas/index.d.mts:8:declare const NonEmptyString: z.ZodString;
+dist/esm/schemas/index.d.mts:14:declare const Any: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+dist/esm/schemas/index.d.mts:20:declare const OptionalAny: z.ZodNullable<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>>;
+dist/esm/schemas/index.d.mts:26:declare const NetworkSchemaV1: z.ZodString;
+dist/esm/schemas/index.d.mts:32:declare const NetworkSchemaV2: z.ZodEffects<z.ZodString, string, string>;
+dist/esm/schemas/index.d.mts:37:declare const NetworkSchema: z.ZodUnion<[z.ZodString, z.ZodEffects<z.ZodString, string, string>]>;
+dist/esm/schemas/index.d.mts:39:declare const ResourceInfoSchema: z.ZodObject<{
+dist/esm/schemas/index.d.mts:66:declare const PaymentRequirementsV1Schema: z.ZodObject<{
+dist/esm/schemas/index.d.mts:108:declare const PaymentRequiredV1Schema: z.ZodObject<{
+dist/esm/schemas/index.d.mts:186:declare const PaymentPayloadV1Schema: z.ZodObject<{
+dist/esm/schemas/index.d.mts:207:declare const PaymentRequirementsV2Schema: z.ZodObject<{
+dist/esm/schemas/index.d.mts:237:declare const PaymentRequiredV2Schema: z.ZodObject<{
+dist/esm/schemas/index.d.mts:336:declare const PaymentPayloadV2Schema: z.ZodObject<{
+dist/esm/schemas/index.d.mts:449:declare const PaymentRequirementsSchema: z.ZodUnion<[z.ZodObject<{
+dist/esm/schemas/index.d.mts:515:declare const PaymentRequiredSchema: z.ZodDiscriminatedUnion<"x402Version", [z.ZodObject<{
+dist/esm/schemas/index.d.mts:686:declare const PaymentPayloadSchema: z.ZodDiscriminatedUnion<"x402Version", [z.ZodObject<{
+dist/esm/schemas/index.d.mts:816:declare function parsePaymentRequired(value: unknown): z.SafeParseReturnType<unknown, PaymentRequired>;
+dist/esm/schemas/index.d.mts:824:declare function validatePaymentRequired(value: unknown): PaymentRequired;
+dist/esm/schemas/index.d.mts:831:declare function isPaymentRequired(value: unknown): value is PaymentRequired;
+dist/esm/schemas/index.d.mts:838:declare function parsePaymentRequirements(value: unknown): z.SafeParseReturnType<unknown, PaymentRequirements>;
+dist/esm/schemas/index.d.mts:846:declare function validatePaymentRequirements(value: unknown): PaymentRequirements;
+dist/esm/schemas/index.d.mts:853:declare function isPaymentRequirements(value: unknown): value is PaymentRequirements;
+dist/esm/schemas/index.d.mts:860:declare function parsePaymentPayload(value: unknown): z.SafeParseReturnType<unknown, PaymentPayload>;
+dist/esm/schemas/index.d.mts:868:declare function validatePaymentPayload(value: unknown): PaymentPayload;
+dist/esm/schemas/index.d.mts:875:declare function isPaymentPayload(value: unknown): value is PaymentPayload;
+dist/esm/schemas/index.d.mts:882:declare function isPaymentRequiredV1(value: unknown): value is PaymentRequiredV1;
+dist/esm/schemas/index.d.mts:889:declare function isPaymentRequiredV2(value: unknown): value is PaymentRequiredV2;
+dist/esm/schemas/index.d.mts:896:declare function isPaymentRequirementsV1(value: unknown): value is PaymentRequirementsV1;
+dist/esm/schemas/index.d.mts:903:declare function isPaymentRequirementsV2(value: unknown): value is PaymentRequirementsV2;
+dist/esm/schemas/index.d.mts:910:declare function isPaymentPayloadV1(value: unknown): value is PaymentPayloadV1;
+dist/esm/schemas/index.d.mts:917:declare function isPaymentPayloadV2(value: unknown): value is PaymentPayloadV2;
+dist/esm/schemas/index.d.mts:919:export { Any, type Network, NetworkSchema, NetworkSchemaV1, NetworkSchemaV2, type NetworkV1, type NetworkV2, NonEmptyString, OptionalAny, type PaymentPayload, PaymentPayloadSchema, type PaymentPayloadV1, PaymentPayloadV1Schema, type PaymentPayloadV2, PaymentPayloadV2Schema, type PaymentRequired, PaymentRequiredSchema, type PaymentRequiredV1, PaymentRequiredV1Schema, type PaymentRequiredV2, PaymentRequiredV2Schema, type PaymentRequirements, PaymentRequirementsSchema, type PaymentRequirementsV1, PaymentRequirementsV1Schema, type PaymentRequirementsV2, PaymentRequirementsV2Schema, type ResourceInfo, ResourceInfoSchema, isPaymentPayload, isPaymentPayloadV1, isPaymentPayloadV2, isPaymentRequired, isPaymentRequiredV1, isPaymentRequiredV2, isPaymentRequirements, isPaymentRequirementsV1, isPaymentRequirementsV2, parsePaymentPayload, parsePaymentRequired, parsePaymentRequirements, validatePaymentPayload, validatePaymentRequired, validatePaymentRequirements };
+dist/esm/server/index.d.mts:2:export { ah as AfterSettleHook, ae as AfterVerifyHook, ag as BeforeSettleHook, ad as BeforeVerifyHook, C as CompiledRoute, a8 as CompletedSettlement, aa as ExtensionValidationResult, E as FacilitatorCapabilityError, F as FacilitatorClient, z as FacilitatorConfig, A as FacilitatorResponseError, B as FacilitatorTimeoutError, H as HTTPAdapter, y as HTTPFacilitatorClient, e as HTTPProcessResult, b as HTTPRequestContext, k as HTTPResponseBody, d as HTTPResponseInstructions, c as HTTPTransportContext, ai as OnSettleFailureHook, aj as OnVerifiedPaymentCanceledHook, af as OnVerifyFailureHook, v as PAYMENT_REQUIRED_CACHE_CONTROL, a7 as PaymentCancellationDispatcher, ao as PaymentFlowConfig, Y as PaymentRequiredContext, f as PaywallConfig, g as PaywallProvider, o as ProcessSettleFailureResponse, m as ProcessSettleResultResponse, n as ProcessSettleSuccessResponse, r as ProtectedRequestHook, X as ResourceConfig, ac as ResourceVerifyRespone, R as RouteConfig, q as RouteConfigurationError, p as RouteValidationError, i as RoutesConfig, u as SETTLEMENT_OVERRIDES_HEADER, ak as SchemeEnrichPaymentRequiredResponseHook, am as SchemeEnrichSettlementPayloadHook, an as SchemeEnrichSettlementResponseHook, al as SchemePaymentRequiredContext, a0 as SettleContext, a2 as SettleFailureContext, a3 as SettlePhase, a1 as SettleResultContext, l as SettlementFailedResponseBody, a9 as SettlementOverrides, ab as SkipHandlerDirective, U as UnpaidResponseBody, a6 as VerifiedPaymentCancelOptions, a4 as VerifiedPaymentCanceledContext, a5 as VerifiedPaymentCancellationReason, Z as VerifyContext, $ as VerifyFailureContext, _ as VerifyResultContext, ap as checkIfBazaarNeeded, G as getFacilitatorResponseError, w as withPrivateCacheControl, x as x402HTTPResourceServer, W as x402ResourceServer } from '../x402Client-C7_OogbK.mjs';
+dist/esm/server/index.d.mts:3:export { a as attachBackgroundInitHandler, i as isFatalStartupInitError } from '../backgroundInit-CJlb-S48.mjs';
+dist/esm/server/index.d.mts:9:declare const SDK_DEFAULT_ASSET_TRANSFER_METHOD = "default";
+dist/esm/server/index.d.mts:17:declare const PAYMENT_FLOWS: Record<PaymentFlowName, PaymentFlowPhases>;
+dist/esm/server/index.d.mts:28:declare function resolvePaymentFlow(scheme: Pick<SchemeNetworkServer, "defaultAssetTransferMethod" | "paymentFlows" | "scheme">, requirements: DeepReadonly<PaymentRequirements>): {
+dist/esm/server/index.d.mts:44:declare function applyPaymentFlowWireExtra(extra: Record<string, unknown>, resolved: {
+dist/esm/server/index.d.mts:55:declare function resolvePaymentFlowPhases(flow: PaymentFlowName): PaymentFlowPhases;
+dist/esm/server/index.d.mts:69:declare function resolveFailurePathSettlement(cancelSettlement: SettleResponse | void | undefined, beforeHandlerSettlement?: {
+dist/esm/server/index.d.mts:79:declare function isVacantStringField(value: string): boolean;
+dist/esm/server/index.d.mts:86:declare function snapshotPaymentRequirementsList(requirements: PaymentRequirements[]): PaymentRequirements[];
+dist/esm/server/index.d.mts:101:declare function assertAcceptsAllowlistedAfterExtensionEnrich(baseline: PaymentRequirements[], current: PaymentRequirements[], extensionKey: string): void;
+dist/esm/server/index.d.mts:113:declare function assertAcceptsAdditiveExtraAfterSchemeEnrich(baseline: PaymentRequirements[], current: PaymentRequirements[], scheme: string, network: string): void;
+dist/esm/server/index.d.mts:124:declare function snapshotSettleResponseCore(result: SettleResponse): SettleResponseCoreSnapshot;
+dist/esm/server/index.d.mts:134:declare function assertSettleResponseCoreUnchanged(before: SettleResponseCoreSnapshot, after: SettleResponse, extensionKey: string): void;
+dist/esm/server/index.d.mts:142:declare function assertAdditivePayloadEnrichment(payload: Record<string, unknown>, enrichment: Record<string, unknown>, callerLabel: string): void;
+dist/esm/server/index.d.mts:151:declare function assertAdditiveSettlementExtra(extra: Record<string, unknown>, enrichment: Record<string, unknown>, callerLabel: string): void;
+dist/esm/server/index.d.mts:153:export { PAYMENT_FLOWS, PaymentFlowName, PaymentFlowPhases, SDK_DEFAULT_ASSET_TRANSFER_METHOD, type SettleResponseCoreSnapshot, applyPaymentFlowWireExtra, assertAcceptsAdditiveExtraAfterSchemeEnrich, assertAcceptsAllowlistedAfterExtensionEnrich, assertAdditivePayloadEnrichment, assertAdditiveSettlementExtra, assertSettleResponseCoreUnchanged, isVacantStringField, resolveFailurePathSettlement, resolvePaymentFlow, resolvePaymentFlowPhases, snapshotPaymentRequirementsList, snapshotSettleResponseCore };
+dist/esm/types/index.d.mts:1:export { aQ as AssetAmount, T as DeepReadonly, b4 as DefaultAsset, b5 as DefaultAssetTable, E as FacilitatorCapabilityError, b3 as FacilitatorContext, K as FacilitatorExtension, A as FacilitatorResponseError, B as FacilitatorTimeoutError, b7 as FindDefaultAsset, b6 as GetDefaultAsset, s as HTTPResourceServerExtensionHooks, M as Money, b0 as MoneyParser, N as Network, ao as PaymentFlowConfig, L as PaymentFlowName, O as PaymentFlowPhases, P as PaymentPayload, b2 as PaymentPayloadContext, b1 as PaymentPayloadResult, aL as PaymentPayloadV1, a as PaymentRequired, Y as PaymentRequiredContext, aK as PaymentRequiredV1, I as PaymentRequirements, aJ as PaymentRequirementsV1, aR as Price, aY as ResourceInfo, b8 as ResourceServerExtension, b9 as ResourceServerExtensionHooks, t as ResourceServerTransportExtensionHooks, a_ as SchemeClientHooks, ak as SchemeEnrichPaymentRequiredResponseHook, aZ as SchemeNetworkClient, J as SchemeNetworkFacilitator, Q as SchemeNetworkServer, al as SchemePaymentRequiredContext, a$ as SchemeServerHooks, a0 as SettleContext, aX as SettleError, a2 as SettleFailureContext, aT as SettleRequest, S as SettleResponse, a1 as SettleResultContext, aV as SupportedKind, aU as SupportedResponse, a4 as VerifiedPaymentCanceledContext, Z as VerifyContext, aW as VerifyError, $ as VerifyFailureContext, aS as VerifyRequest, V as VerifyResponse, _ as VerifyResultContext, G as getFacilitatorResponseError } from '../x402Client-C7_OogbK.mjs';
+dist/esm/types/v1/index.d.mts:1:export { aL as PaymentPayloadV1, aK as PaymentRequiredV1, aJ as PaymentRequirementsV1, aN as SettleRequestV1, aO as SettleResponseV1, aP as SupportedResponseV1, aM as VerifyRequestV1 } from '../../x402Client-C7_OogbK.mjs';
+dist/esm/utils/index.d.mts:12:declare function numberToDecimalString(n: number): string;
+dist/esm/utils/index.d.mts:21:declare function parseMoneyString(money: string): string;
+dist/esm/utils/index.d.mts:33:declare function parseMoney(money: Money): {
+dist/esm/utils/index.d.mts:46:declare function convertToTokenAmount(decimalAmount: string, decimals: number): string;
+dist/esm/utils/index.d.mts:55:declare const networkMatchesPattern: (pattern: Network, network: Network) => boolean;
+dist/esm/utils/index.d.mts:56:declare const findSchemesByNetwork: <T>(map: Map<string, Map<string, T>>, network: Network) => Map<string, T> | undefined;
+dist/esm/utils/index.d.mts:57:declare const findByNetworkAndScheme: <T>(map: Map<string, Map<string, T>>, scheme: string, network: Network) => T | undefined;
+dist/esm/utils/index.d.mts:67:declare const findFacilitatorBySchemeAndNetwork: <T>(schemeMap: Map<string, SchemeData<T>>, scheme: string, network: Network) => T | undefined;
+dist/esm/utils/index.d.mts:68:declare const Base64EncodedRegex: RegExp;
+dist/esm/utils/index.d.mts:75:declare function safeBase64Encode(data: string): string;
+dist/esm/utils/index.d.mts:82:declare function safeBase64Decode(data: string): string;
+dist/esm/utils/index.d.mts:91:declare function deepEqual(obj1: unknown, obj2: unknown): boolean;
+dist/esm/utils/index.d.mts:102:declare function toComparableArray(value: unknown): unknown[] | undefined;
+dist/esm/utils/index.d.mts:112:declare const ADDITIVE_ARRAY_INFO_FIELDS: Record<string, ReadonlySet<string>>;
+dist/esm/utils/index.d.mts:119:declare const SERVER_OWNED_INFO_FIELDS: Record<string, ReadonlySet<string>>;
+dist/esm/utils/index.d.mts:131:declare const ADDITIVE_ARRAY_MAX_LENGTHS: Record<string, Record<string, number>>;
+dist/esm/utils/index.d.mts:133:export { ADDITIVE_ARRAY_INFO_FIELDS, ADDITIVE_ARRAY_MAX_LENGTHS, Base64EncodedRegex, SERVER_OWNED_INFO_FIELDS, type SchemeData, convertToTokenAmount, deepEqual, findByNetworkAndScheme, findFacilitatorBySchemeAndNetwork, findSchemesByNetwork, networkMatchesPattern, numberToDecimalString, parseMoney, parseMoneyString, safeBase64Decode, safeBase64Encode, toComparableArray };
+dist/esm/x402Client-C7_OogbK.d.mts:130:declare class HTTPFacilitatorClient implements FacilitatorClient {
+dist/esm/x402Client-C7_OogbK.d.mts:382:declare class x402ResourceServer {
+dist/esm/x402Client-C7_OogbK.d.mts:755:declare const SETTLEMENT_OVERRIDES_HEADER = "Settlement-Overrides";
+dist/esm/x402Client-C7_OogbK.d.mts:756:declare const PAYMENT_REQUIRED_CACHE_CONTROL = "no-store";
+dist/esm/x402Client-C7_OogbK.d.mts:764:declare function withPrivateCacheControl(value: string | null): string;
+dist/esm/x402Client-C7_OogbK.d.mts:906:declare function checkIfBazaarNeeded(routes: RoutesConfig): boolean;
+dist/esm/x402Client-C7_OogbK.d.mts:1023:declare class RouteConfigurationError extends Error {
+dist/esm/x402Client-C7_OogbK.d.mts:1037:declare class x402HTTPResourceServer {
+dist/esm/x402Client-C7_OogbK.d.mts:1445:declare class VerifyError extends Error {
+dist/esm/x402Client-C7_OogbK.d.mts:1461:declare class SettleError extends Error {
+dist/esm/x402Client-C7_OogbK.d.mts:1479:declare class FacilitatorResponseError extends Error {
+dist/esm/x402Client-C7_OogbK.d.mts:1498:declare class FacilitatorTimeoutError extends FacilitatorResponseError {
+dist/esm/x402Client-C7_OogbK.d.mts:1515:declare class FacilitatorCapabilityError extends Error {
+dist/esm/x402Client-C7_OogbK.d.mts:1531:declare function getFacilitatorResponseError(error: unknown): FacilitatorResponseError | null;
+dist/esm/x402Client-C7_OogbK.d.mts:1883:declare const DEFAULT_MAX_AMOUNT_PER_PAYMENT: Money;
+dist/esm/x402Client-C7_OogbK.d.mts:1967:declare class x402Client {
+dist/esm/x402Client-C7_OogbK.d.mts:2186:export { type VerifyFailureContext as $, FacilitatorResponseError as A, FacilitatorTimeoutError as B, type CompiledRoute as C, type DynamicPayTo as D, FacilitatorCapabilityError as E, type FacilitatorClient as F, getFacilitatorResponseError as G, type HTTPAdapter as H, type PaymentRequirements as I, type SchemeNetworkFacilitator as J, type FacilitatorExtension as K, type PaymentFlowName as L, type Money as M, type Network as N, type PaymentFlowPhases as O, type PaymentPayload as P, type SchemeNetworkServer as Q, type RouteConfig as R, type SettleResponse as S, type DeepReadonly as T, type UnpaidResponseBody as U, type VerifyResponse as V, x402ResourceServer as W, type ResourceConfig as X, type PaymentRequiredContext as Y, type VerifyContext as Z, type VerifyResultContext as _, type PaymentRequired as a, type SchemeServerHooks as a$, type SettleContext as a0, type SettleResultContext as a1, type SettleFailureContext as a2, type SettlePhase as a3, type VerifiedPaymentCanceledContext as a4, type VerifiedPaymentCancellationReason as a5, type VerifiedPaymentCancelOptions as a6, type PaymentCancellationDispatcher as a7, type CompletedSettlement as a8, type SettlementOverrides as a9, type ClientExtensionHooks as aA, type ClientTransportExtensionHooks as aB, type ClientExtension as aC, type PaymentPolicy as aD, DEFAULT_MAX_AMOUNT_PER_PAYMENT as aE, type SpendControlAsset as aF, type SpendControls as aG, type SchemeRegistration as aH, type x402ClientConfig as aI, type PaymentRequirementsV1 as aJ, type PaymentRequiredV1 as aK, type PaymentPayloadV1 as aL, type VerifyRequestV1 as aM, type SettleRequestV1 as aN, type SettleResponseV1 as aO, type SupportedResponseV1 as aP, type AssetAmount as aQ, type Price as aR, type VerifyRequest as aS, type SettleRequest as aT, type SupportedResponse as aU, type SupportedKind as aV, VerifyError as aW, SettleError as aX, type ResourceInfo as aY, type SchemeNetworkClient as aZ, type SchemeClientHooks as a_, type ExtensionValidationResult as aa, type SkipHandlerDirective as ab, type ResourceVerifyRespone as ac, type BeforeVerifyHook as ad, type AfterVerifyHook as ae, type OnVerifyFailureHook as af, type BeforeSettleHook as ag, type AfterSettleHook as ah, type OnSettleFailureHook as ai, type OnVerifiedPaymentCanceledHook as aj, type SchemeEnrichPaymentRequiredResponseHook as ak, type SchemePaymentRequiredContext as al, type SchemeEnrichSettlementPayloadHook as am, type SchemeEnrichSettlementResponseHook as an, type PaymentFlowConfig as ao, checkIfBazaarNeeded as ap, x402Client as aq, type PaymentCreationContext as ar, type PaymentCreatedContext as as, type PaymentCreationFailureContext as at, type BeforePaymentCreationHook as au, type AfterPaymentCreationHook as av, type OnPaymentCreationFailureHook as aw, type PaymentResponseContext as ax, type OnPaymentResponseHook as ay, type SelectPaymentRequirements as az, type HTTPRequestContext as b, type MoneyParser as b0, type PaymentPayloadResult as b1, type PaymentPayloadContext as b2, type FacilitatorContext as b3, type DefaultAsset as b4, type DefaultAssetTable as b5, type GetDefaultAsset as b6, type FindDefaultAsset as b7, type ResourceServerExtension as b8, type ResourceServerExtensionHooks as b9, type HTTPTransportContext as c, type HTTPResponseInstructions as d, type HTTPProcessResult as e, type PaywallConfig as f, type PaywallProvider as g, type PaymentOption as h, type RoutesConfig as i, type DynamicPrice as j, type HTTPResponseBody as k, type SettlementFailedResponseBody as l, type ProcessSettleResultResponse as m, type ProcessSettleSuccessResponse as n, type ProcessSettleFailureResponse as o, type RouteValidationError as p, RouteConfigurationError as q, type ProtectedRequestHook as r, type HTTPResourceServerExtensionHooks as s, type ResourceServerTransportExtensionHooks as t, SETTLEMENT_OVERRIDES_HEADER as u, PAYMENT_REQUIRED_CACHE_CONTROL as v, withPrivateCacheControl as w, x402HTTPResourceServer as x, HTTPFacilitatorClient as y, type FacilitatorConfig as z };

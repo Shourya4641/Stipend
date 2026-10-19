@@ -1,0 +1,35 @@
+### @x402/express@2.28.0
+### from: node_modules/.pnpm/@x402+express@2.28.0_express@5.3.0_typescript@5.9.3/node_modules/@x402/express
+### type files found: 2
+
+### legal import paths
+{
+  ".": {
+    "import": {
+      "types": "./dist/esm/index.d.mts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.js"
+    }
+  }
+}
+
+### exported symbols
+dist/cjs/index.d.ts:2:export { PaywallConfig, PaywallProvider, RouteConfigurationError, RouteValidationError, SETTLEMENT_OVERRIDES_HEADER, SettlementOverrides, x402HTTPResourceServer, x402ResourceServer } from '@x402/core/server';
+dist/cjs/index.d.ts:4:export { Network, PaymentPayload, PaymentRequired, PaymentRequirements, SchemeNetworkServer } from '@x402/core/types';
+dist/cjs/index.d.ts:10:declare class ExpressAdapter implements HTTPAdapter {
+dist/cjs/index.d.ts:84:declare function setSettlementOverrides(res: Response, overrides: SettlementOverrides): void;
+dist/cjs/index.d.ts:122:declare function paymentMiddlewareFromHTTPServer(httpServer: x402HTTPResourceServer, paywallConfig?: PaywallConfig, paywall?: PaywallProvider, syncFacilitatorOnStart?: boolean): (req: Request, res: Response, next: NextFunction) => Promise<void>;
+dist/cjs/index.d.ts:147:declare function paymentMiddleware(routes: RoutesConfig, server: x402ResourceServer, paywallConfig?: PaywallConfig, paywall?: PaywallProvider, syncFacilitatorOnStart?: boolean): (req: Request, res: Response, next: NextFunction) => Promise<void>;
+dist/cjs/index.d.ts:174:declare function paymentMiddlewareFromConfig(routes: RoutesConfig, facilitatorClients?: FacilitatorClient | FacilitatorClient[], schemes?: SchemeRegistration[], paywallConfig?: PaywallConfig, paywall?: PaywallProvider, syncFacilitatorOnStart?: boolean): (req: Request, res: Response, next: NextFunction) => Promise<void>;
+dist/cjs/index.d.ts:176:export { ExpressAdapter, type SchemeRegistration, paymentMiddleware, paymentMiddlewareFromConfig, paymentMiddlewareFromHTTPServer, setSettlementOverrides };
+dist/esm/index.d.mts:2:export { PaywallConfig, PaywallProvider, RouteConfigurationError, RouteValidationError, SETTLEMENT_OVERRIDES_HEADER, SettlementOverrides, x402HTTPResourceServer, x402ResourceServer } from '@x402/core/server';
+dist/esm/index.d.mts:4:export { Network, PaymentPayload, PaymentRequired, PaymentRequirements, SchemeNetworkServer } from '@x402/core/types';
+dist/esm/index.d.mts:10:declare class ExpressAdapter implements HTTPAdapter {
+dist/esm/index.d.mts:84:declare function setSettlementOverrides(res: Response, overrides: SettlementOverrides): void;
+dist/esm/index.d.mts:122:declare function paymentMiddlewareFromHTTPServer(httpServer: x402HTTPResourceServer, paywallConfig?: PaywallConfig, paywall?: PaywallProvider, syncFacilitatorOnStart?: boolean): (req: Request, res: Response, next: NextFunction) => Promise<void>;
+dist/esm/index.d.mts:147:declare function paymentMiddleware(routes: RoutesConfig, server: x402ResourceServer, paywallConfig?: PaywallConfig, paywall?: PaywallProvider, syncFacilitatorOnStart?: boolean): (req: Request, res: Response, next: NextFunction) => Promise<void>;
+dist/esm/index.d.mts:174:declare function paymentMiddlewareFromConfig(routes: RoutesConfig, facilitatorClients?: FacilitatorClient | FacilitatorClient[], schemes?: SchemeRegistration[], paywallConfig?: PaywallConfig, paywall?: PaywallProvider, syncFacilitatorOnStart?: boolean): (req: Request, res: Response, next: NextFunction) => Promise<void>;
+dist/esm/index.d.mts:176:export { ExpressAdapter, type SchemeRegistration, paymentMiddleware, paymentMiddlewareFromConfig, paymentMiddlewareFromHTTPServer, setSettlementOverrides };

@@ -1,0 +1,18 @@
+--- generateKeyPairSigner
+110:export declare function generateKeyPairSigner(extractable?: boolean): Promise<KeyPairSigner>;
+--- createKeyPairSignerFromBytes
+131:export declare function createKeyPairSignerFromBytes(bytes: ReadonlyUint8Array, extractable?: boolean): Promise<KeyPairSigner>;
+--- createKeyPairSignerFromPrivateKeyBytes
+148:export declare function createKeyPairSignerFromPrivateKeyBytes(bytes: ReadonlyUint8Array, extractable?: boolean): Promise<KeyPairSigner>;
+--- createSignerFromKeyPair
+92:export declare function createSignerFromKeyPair(keyPair: CryptoKeyPair): Promise<KeyPairSigner>;
+--- createSolanaRpc
+11:export declare function createSolanaRpc<TClusterUrl extends ClusterUrl>(clusterUrl: TClusterUrl, config?: Omit<DefaultRpcTransportConfig<TClusterUrl>, 'url'>): RpcFromTransport<SolanaRpcApiFromTransport<import("./rpc-clusters").RpcTransportFromClusterUrl<TClusterUrl>>, import("./rpc-clusters").RpcTransportFromClusterUrl<TClusterUrl>>;
+--- createSolanaRpcSubscriptions
+12:export declare function createSolanaRpcSubscriptions<TClusterUrl extends ClusterUrl>(clusterUrl: TClusterUrl, config?: Omit<Config<TClusterUrl>, 'url'>): RpcSubscriptionsFromTransport<SolanaRpcSubscriptionsApi, import("./rpc-subscriptions-clusters").RpcSubscriptionsTransportFromClusterUrl<TClusterUrl>>;
+--- address
+79:export declare function address<TAddress extends string = string>(putativeAddress: TAddress): Address<TAddress>;
+--- getBase58Encoder
+--- getBase58Decoder
+--- lamports
+69:export declare function lamports(putativeLamports: bigint): Lamports;

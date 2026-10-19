@@ -1,0 +1,907 @@
+### DIR=node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm
+
+########## exact/client/index.d.mts ##########
+
+export { E as ExactSvmScheme } from '../../scheme-BYN0UywL.mjs';
+import { x402Client, SelectPaymentRequirements, PaymentPolicy } from '@x402/core/client';
+import { Network } from '@x402/core/types';
+import { C as ClientSvmSigner } from '../../signer-gUqhJy7y.mjs';
+import '../../defaultAssets-BxQwBgBJ.mjs';
+import '@solana/kit';
+
+/**
+ * Configuration options for registering SVM schemes to an x402Client
+ */
+interface SvmClientConfig {
+    /**
+     * The SVM signer to use for creating payment payloads
+     */
+    signer: ClientSvmSigner;
+    /**
+     * Optional payment requirements selector function
+     */
+    paymentRequirementsSelector?: SelectPaymentRequirements;
+    /**
+     * Optional policies to apply to the client
+     */
+    policies?: PaymentPolicy[];
+    /**
+     * Optional specific networks to register
+     */
+    networks?: Network[];
+}
+/**
+ * Registers SVM payment schemes to an existing x402Client instance.
+ *
+ * @param client - The x402Client instance to register schemes to
+ * @param config - Configuration for SVM client registration
+ * @returns The client instance for chaining
+ */
+declare function registerExactSvmScheme(client: x402Client, config: SvmClientConfig): x402Client;
+
+export { type SvmClientConfig, registerExactSvmScheme };
+
+########## exact/server/index.d.mts ##########
+
+import { SchemeNetworkServer, MoneyParser, Network, Price, AssetAmount, PaymentRequirements } from '@x402/core/types';
+import { x402ResourceServer } from '@x402/core/server';
+
+/** Options for the server-side {@link ExactSvmScheme}. */
+interface ExactSvmServerOptions {
+    /**
+     * RPC endpoint used to fetch a recent blockhash to embed in the 402
+     * challenge (`extra.recentBlockhash`). When omitted, no blockhash is embedded
+     * and the client fetches its own — see {@link import('../../utils').resolveBlockhash}.
+     */
+    rpcUrl?: string;
+}
+/**
+ * SVM server implementation for the Exact payment scheme.
+ */
+declare class ExactSvmScheme implements SchemeNetworkServer {
+    private readonly options;
+    readonly scheme = "exact";
+    readonly defaultAssetTransferMethod = "default";
+    readonly paymentFlows: {
+        readonly default: {
+            readonly supported: readonly ["authorization", "upfront"];
+            readonly default: "authorization";
+        };
+    };
+    readonly dynamicExtraFields: string[];
+    private moneyParsers;
+    /**
+     * Construct the server-side exact scheme.
+     *
+     * @param options - Optional server configuration (e.g. an `rpcUrl` to embed a
+     *   recent blockhash in the challenge).
+     */
+    constructor(options?: ExactSvmServerOptions);
+    /**
+     * Register a custom money parser in the parser chain.
+     * Multiple parsers can be registered - they will be tried in registration order.
+     * Each parser receives a decimal string (e.g., "1.50" for $1.50).
+     * If a parser returns null, the next parser in the chain will be tried.
+     * The default parser is always the final fallback.
+     *
+     * @param parser - Custom function to convert amount to AssetAmount (or null to skip)
+     * @returns The service instance for chaining
+     */
+    registerMoneyParser(parser: MoneyParser): ExactSvmScheme;
+    /**
+     * Decimals for a known default asset, or undefined.
+     *
+     * @param asset - Asset address or symbol
+     * @param network - Target network
+     * @returns Decimals when the asset is a known default; otherwise undefined
+     */
+    getAssetDecimals(asset: string, network: Network): number | undefined;
+    /**
+     * Parses a price into an asset amount.
+     * If price is already an AssetAmount, returns it directly.
+     * If price is Money (string | number), parses to decimal and tries custom parsers.
+     * Falls back to default conversion if all custom parsers return null.
+     *
+     * @param price - The price to parse
+     * @param network - The network to use
+     * @returns Promise that resolves to the parsed asset amount
+     */
+    parsePrice(price: Price, network: Network): Promise<AssetAmount>;
+    /**
+     * Build payment requirements for this scheme/network combination
+     *
+     * @param paymentRequirements - The base payment requirements
+     * @param supportedKind - The supported kind configuration
+     * @param supportedKind.x402Version - The x402 protocol version
+     * @param supportedKind.scheme - The payment scheme
+     * @param supportedKind.network - The network identifier
+     * @param supportedKind.extra - Extra metadata including feePayer address
+     * @param extensionKeys - Extension keys supported by the facilitator
+     * @returns Enhanced payment requirements with feePayer in extra
+     */
+    enhancePaymentRequirements(paymentRequirements: PaymentRequirements, supportedKind: {
+        x402Version: number;
+        scheme: string;
+        network: Network;
+        extra?: Record<string, unknown>;
+    }, extensionKeys: string[]): Promise<PaymentRequirements>;
+    /**
+     * Default money conversion implementation.
+     * Converts decimal amount to a supported stablecoin on the specified network.
+     *
+     * @param amount - The decimal amount (e.g., 1.50)
+     * @param network - The network to use
+     * @param symbol - Optional ticker from a suffixed price
+     * @returns The parsed asset amount in USDC
+     */
+    private defaultMoneyConversion;
+}
+
+/**
+ * Configuration options for registering SVM schemes to an x402ResourceServer
+ */
+interface SvmResourceServerConfig {
+    /**
+     * Optional specific networks to register
+     */
+    networks?: Network[];
+    /**
+     * Optional RPC endpoint. When set, the scheme embeds a recent blockhash in
+     * the 402 challenge (`extra.recentBlockhash`) so clients can skip their own
+     * `getLatestBlockhash` round-trip.
+     */
+    rpcUrl?: string;
+}
+/**
+ * Registers SVM payment schemes to an existing x402ResourceServer instance.
+ *
+ * @param server - The x402ResourceServer instance to register schemes to
+ * @param config - Configuration for SVM resource server registration
+ * @returns The server instance for chaining
+ */
+declare function registerExactSvmScheme(server: x402ResourceServer, config?: SvmResourceServerConfig): x402ResourceServer;
+
+export { ExactSvmScheme, type ExactSvmServerOptions, type SvmResourceServerConfig, registerExactSvmScheme };
+
+########## exact/facilitator/index.d.mts ##########
+
+export { E as ExactSvmScheme } from '../../scheme-BcpmRJSH.mjs';
+import { x402Facilitator } from '@x402/core/facilitator';
+import { Network } from '@x402/core/types';
+import { F as FacilitatorSvmSigner } from '../../signer-gUqhJy7y.mjs';
+import '../../settlement-cache-jUfefgU-.mjs';
+import '@solana/kit';
+
+/**
+ * Configuration options for registering SVM schemes to an x402Facilitator
+ */
+interface SvmFacilitatorConfig {
+    /**
+     * The SVM signer for facilitator operations
+     */
+    signer: FacilitatorSvmSigner;
+    /**
+     * Networks to register (single network or array of networks)
+     * Examples: "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1", ["solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"]
+     */
+    networks: Network | Network[];
+}
+/**
+ * Registers SVM payment schemes to an existing x402Facilitator instance.
+ *
+ * @param facilitator - The x402Facilitator instance to register schemes to
+ * @param config - Configuration for SVM facilitator registration
+ * @returns The facilitator instance for chaining
+ *
+ * @example
+ * ```typescript
+ * // Single network
+ * registerExactSvmScheme(facilitator, {
+ *   signer: svmSigner,
+ *   networks: "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1"  // Devnet
+ * });
+ *
+ * // Multiple networks (will auto-derive solana:* pattern)
+ * registerExactSvmScheme(facilitator, {
+ *   signer: svmSigner,
+ *   networks: ["solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"]
+ * });
+ * ```
+ */
+declare function registerExactSvmScheme(facilitator: x402Facilitator, config: SvmFacilitatorConfig): x402Facilitator;
+
+export { type SvmFacilitatorConfig, registerExactSvmScheme };
+
+########## root index.d.mts ##########
+
+export { E as ExactSvmScheme } from './scheme-BYN0UywL.mjs';
+export { a as ExactSvmSchemeOptions } from './scheme-BcpmRJSH.mjs';
+export { UptoSvmScheme } from './upto/client/index.mjs';
+export { BatchSvmScheme } from './batch-settlement/client/index.mjs';
+import { MessagePartialSigner, Transaction, RpcDevnet, SolanaRpcApiDevnet, RpcTestnet, SolanaRpcApiTestnet, RpcMainnet, SolanaRpcApiMainnet, Blockhash } from '@solana/kit';
+import { a as BatchAuthorization, C as CloseAuthorization } from './types-CPo7FwL6.mjs';
+export { c as BatchAuthorizationPayload, B as BatchChannelConfig, n as BatchChannelState, j as BatchClaimPayload, g as BatchDepositPayload, b as BatchExtra, m as BatchFacilitatorPayload, f as BatchPayload, i as BatchRefundPayload, k as BatchSettlePayload, e as BatchVoucher, l as BatchVoucherClaim, h as BatchVoucherPayload, d as BatchVoucherSigner, o as isBatchChannelConfig, q as isBatchFacilitatorPayload, p as isBatchPayload, r as isBatchVoucher } from './types-CPo7FwL6.mjs';
+import { PaymentRequirements, VerifyResponse, Network, SettleResponse } from '@x402/core/types';
+import { F as FacilitatorSvmSigner, S as SvmInnerInstructionsResult } from './signer-gUqhJy7y.mjs';
+export { a as ClientSvmConfig, C as ClientSvmSigner, c as FacilitatorAccountInfo, d as FacilitatorProgramAccount, f as FacilitatorRpcClient, g as FacilitatorRpcConfig, e as FacilitatorSimulateTransactionOptions, t as toClientSvmSigner, b as toFacilitatorSvmSigner } from './signer-gUqhJy7y.mjs';
+export { C as CHANNEL_ACCOUNT_SIZE, a as CHANNEL_RENT_PAYER_OFFSET, D as DiscoveredChannel, d as discoverChannelsByRentPayer } from './discovery-BSPpSJoZ.mjs';
+export { S as SettlementCache } from './settlement-cache-jUfefgU-.mjs';
+import { PendingSettlementStore } from '@x402/core/facilitator';
+export { D as DEFAULT_ASSETS, S as SvmDefaultAsset, a as USDC_DEVNET_ADDRESS, U as USDC_MAINNET_ADDRESS, b as USDC_TESTNET_ADDRESS, f as findDefaultAsset, g as getDefaultAsset } from './defaultAssets-BxQwBgBJ.mjs';
+export { convertToTokenAmount, numberToDecimalString } from '@x402/core/utils';
+
+/** Scheme name on the wire and in payment requirements. */
+declare const BATCH_SETTLEMENT_SCHEME = "batch-settlement";
+
+/** Expiring payer authorization for server-signed batch-settlement channels. */
+
+/**
+ * Encode the channel-bound proof that lets an operator meter requests.
+ *
+ * @param args - Authorization identities
+ * @param args.channelId - Channel PDA
+ * @param args.payer - Channel payer
+ * @param args.operator - Delegated voucher signer
+ * @param args.requestId - Single-use request identifier
+ * @param args.authorizedAmount - Maximum charge in atomic units
+ * @param args.expiresAt - Unix timestamp after which the proof is invalid
+ * @returns Bytes the payer signs
+ */
+declare function encodeBatchAuthorizationMessage(args: {
+    channelId: string;
+    payer: string;
+    operator: string;
+    requestId: string;
+    authorizedAmount: bigint;
+    expiresAt: number;
+}): Uint8Array;
+/**
+ * Sign an expiring authorization for one operator-bound channel.
+ *
+ * @param payer - Channel payer and proof signer
+ * @param channelId - Channel PDA
+ * @param operator - Delegated voucher signer
+ * @param requestId - Single-use request identifier
+ * @param authorizedAmount - Maximum charge in atomic units
+ * @param expiresAt - Unix timestamp after which the proof is invalid
+ * @returns Expiring bearer proof
+ */
+declare function signBatchAuthorization(payer: MessagePartialSigner, channelId: string, operator: string, requestId: string, authorizedAmount: bigint, expiresAt: number): Promise<BatchAuthorization>;
+/**
+ * Verify an unexpired server-mode authorization against the channel payer.
+ *
+ * @param authorization - Payer's bearer proof
+ * @param operator - Operator the proof must bind
+ * @param nowSeconds - Current Unix time used for expiry validation
+ * @returns Whether the payer signature is valid
+ */
+declare function verifyBatchAuthorization(authorization: BatchAuthorization, operator: string, nowSeconds?: number): Promise<boolean>;
+
+/**
+ * Server-signed authorization for an immediate cooperative close.
+ *
+ * The receiver authorizer signs the SHA-256 digest of a domain-separated
+ * message binding the network, program, sponsor, channel, final voucher and
+ * an expiry, so one signature can authorize exactly one close and nothing
+ * else (spec section 4.2, `CloseAuthorization`).
+ */
+
+/** Fields the close authorization commits to. */
+interface CloseAuthorizationBinding {
+    /** CAIP-2 network identifier from `PaymentRequirements`. */
+    network: string;
+    /** Sponsor recorded as channel `payee` and `rent_payer` (`extra.feePayer`). */
+    feePayer: string;
+    /** Channel PDA (base58). */
+    channelId: string;
+    /** Final voucher cumulative amount in atomic units. */
+    maxClaimableAmount: bigint;
+    /** Final voucher expiry; `0` in this scheme. */
+    voucherExpiresAt: bigint;
+    /** Unix seconds after which the authorization is void. */
+    validBefore: number;
+    /** Payment-channels program id; defaults to the canonical deployment. */
+    programId?: string | undefined;
+}
+/**
+ * SHA-256 digest the receiver authorizer signs:
+ *
+ * ```text
+ * UTF8("x402:batch-settlement:svm:close:v1") || 0x00 ||
+ * u16(len(network)).le || UTF8(network) ||
+ * programId[32] || feePayer[32] || channelId[32] ||
+ * u64(maxClaimableAmount).le || i64(voucherExpiresAt).le || i64(validBefore).le
+ * ```
+ *
+ * @param binding - Fields to commit to
+ * @returns The 32-byte digest
+ */
+declare function encodeCloseAuthorizationDigest(binding: CloseAuthorizationBinding): Uint8Array;
+/**
+ * Sign a close authorization with the server's receiver authorizer.
+ *
+ * @param authorizer - Receiver-authorizer key advertised as `extra.receiverAuthorizer`
+ * @param binding - Fields to commit to
+ * @returns The wire `CloseAuthorization`
+ */
+declare function signCloseAuthorization(authorizer: MessagePartialSigner, binding: CloseAuthorizationBinding): Promise<CloseAuthorization>;
+/**
+ * Verify a close authorization against the receiver authorizer bound to the
+ * channel, requiring `now < validBefore <= now + maxTimeoutSeconds`.
+ *
+ * @param authorization - The wire `CloseAuthorization`
+ * @param binding - Fields the signature must commit to; `validBefore` is taken from the authorization
+ * @param receiverAuthorizer - Trusted receiver-authorizer key (base58)
+ * @param maxTimeoutSeconds - Longest validity window the facilitator accepts
+ * @param nowSeconds - Current Unix time
+ * @returns Whether the authorization is valid and unexpired
+ */
+declare function verifyCloseAuthorization(authorization: CloseAuthorization, binding: Omit<CloseAuthorizationBinding, "validBefore">, receiverAuthorizer: string, maxTimeoutSeconds: number, nowSeconds?: number): Promise<boolean>;
+
+/**
+ * Smart wallet verification via simulation-based outcome analysis.
+ *
+ * Instead of parsing proprietary smart wallet instruction formats, this module
+ * verifies payment outcomes by inspecting the CPI trace from transaction simulation.
+ * Works for any smart wallet program (Squads, Swig, SPL Governance, etc.) that
+ * ultimately executes a TransferChecked via CPI.
+ */
+
+type SmartWalletLimits = {
+    maxComputeUnits?: number;
+    maxPriorityFeeMicroLamports?: number;
+};
+/**
+ * {@link FacilitatorSvmSigner} narrowed to the optional caps Path 2
+ * (simulation-based smart wallet payment verification) requires at runtime.
+ */
+type SmartWalletVerifySigner = FacilitatorSvmSigner & {
+    simulateTransactionWithInnerInstructions: NonNullable<FacilitatorSvmSigner["simulateTransactionWithInnerInstructions"]>;
+    getConfirmedTransactionInnerInstructions: NonNullable<FacilitatorSvmSigner["getConfirmedTransactionInnerInstructions"]>;
+    getTokenAccountBalance: NonNullable<FacilitatorSvmSigner["getTokenAccountBalance"]>;
+    fetchAddressLookupTables: NonNullable<FacilitatorSvmSigner["fetchAddressLookupTables"]>;
+};
+/**
+ * Rejects smart-wallet limits that cannot be compared safely.
+ *
+ * @param limits - Optional operator-provided compute budget caps
+ */
+declare function assertSmartWalletLimits(limits?: SmartWalletLimits): void;
+type TransferCheckedInfo = {
+    programId: string;
+    amount: bigint;
+    mint: string;
+    destination: string;
+    authority: string;
+};
+/**
+ * Instruction bytes as kit exposes them (ReadonlyUint8Array) plus a plain
+ * Uint8Array. Only length/index/DataView fields are required.
+ */
+type InstructionDataBytes = {
+    readonly [index: number]: number;
+    readonly length: number;
+    readonly buffer: ArrayBufferLike;
+    readonly byteOffset: number;
+    readonly byteLength: number;
+};
+type DecodedInstructionView = {
+    programAddress: {
+        toString(): string;
+    };
+    accounts?: ReadonlyArray<{
+        address: {
+            toString(): string;
+        };
+    }>;
+    data?: InstructionDataBytes;
+};
+/**
+ * Pre-decoded transaction view shared by Path 1 and Path 2 so the message is
+ * decompiled once per verify, including any resolved address lookup tables.
+ */
+type DecodedTransactionView = {
+    transaction: Transaction;
+    compiled: {
+        staticAccounts?: readonly {
+            toString(): string;
+        }[];
+        addressTableLookups?: ReadonlyArray<{
+            lookupTableAddress: {
+                toString(): string;
+            };
+            writableIndexes: readonly number[];
+            readonlyIndexes: readonly number[];
+        }>;
+    };
+    decompiled: {
+        instructions?: ReadonlyArray<DecodedInstructionView>;
+    };
+    resolvedAccountKeys: readonly string[];
+};
+/**
+ * Asserts the fee payer does NOT appear in any instruction's accounts or as a
+ * program ID. If the fee payer is never referenced in any instruction, the
+ * Solana runtime cannot authorize it for token transfers, account creation,
+ * approvals, or any operation that requires a signer in the accounts list.
+ * The fee payer only pays the transaction fee automatically.
+ *
+ * @param transaction - Decoded transaction to inspect
+ * @param feePayerAddress - Facilitator fee payer address that must remain isolated
+ * @param signer - Optional facilitator signer for resolving Address Lookup Tables
+ * @param network - Optional CAIP-2 network identifier for ALT resolution RPC calls
+ */
+declare function assertFeePayerIsolated(transaction: Transaction, feePayerAddress: string, signer?: FacilitatorSvmSigner, network?: string): Promise<void>;
+/**
+ * Validates ComputeBudget instructions without enforcing a program allowlist.
+ * Caps compute units and priority fees to bound the facilitator's fee exposure.
+ *
+ * @param transaction - Decoded transaction to inspect
+ * @param limits - Optional operator-provided overrides for compute budget caps
+ * @param limits.maxComputeUnits - Maximum allowed compute units
+ * @param limits.maxPriorityFeeMicroLamports - Maximum allowed priority fee in microlamports
+ */
+declare function validateComputeBudgetLimits(transaction: Transaction, limits?: SmartWalletLimits): void;
+/**
+ * Extracts TransferChecked instructions from simulation inner instructions
+ * (CPI trace). Handles both parsed and compiled formats from the Solana RPC.
+ *
+ * @param innerInstructions - Inner instructions from simulation result
+ * @param accountKeys - Static account keys from the compiled transaction message
+ * @returns Array of extracted TransferChecked instructions
+ */
+declare function extractTransfersFromInnerInstructions(innerInstructions: SvmInnerInstructionsResult["innerInstructions"], accountKeys: readonly string[]): TransferCheckedInfo[];
+/**
+ * Operator-configurable options for smart wallet verification.
+ * Passed through from the ExactSvmScheme constructor.
+ */
+type SmartWalletOptions = SmartWalletLimits & {
+    enabled: boolean;
+};
+/**
+ * Verify response plus the matched TransferChecked when Path 2 succeeds.
+ * Used by settle to fetch one pre-balance and pass the known ATA into
+ * post-settlement verification.
+ */
+type SmartWalletVerifyResult = VerifyResponse & {
+    matchedTransfer?: TransferCheckedInfo;
+};
+/**
+ * Full smart wallet verification pipeline.
+ * Called when static verification rejects a transaction due to unknown programs.
+ *
+ * 1. Assert fee payer isolation
+ * 2. Validate compute budget caps
+ * 3. Simulate with inner instructions
+ * 4. Extract and match TransferChecked from CPI trace
+ *
+ * @param transactionBase64 - Base64 encoded transaction
+ * @param requirements - Payment requirements to verify against
+ * @param signer - Facilitator signer (must implement simulation verification caps)
+ * @param feePayerAddress - Facilitator fee payer address
+ * @param signerAddresses - All facilitator signer addresses (for self-spend protection)
+ * @param options - Optional operator-configurable limits
+ * @param decoded - Pre-decoded transaction (avoids a second decode/decompile)
+ * @returns Verification result
+ */
+declare function verifySmartWalletTransaction(transactionBase64: string, requirements: PaymentRequirements, signer: SmartWalletVerifySigner, feePayerAddress: string, signerAddresses: readonly string[], options?: SmartWalletOptions, decoded?: DecodedTransactionView): Promise<SmartWalletVerifyResult>;
+/**
+ * Post-settlement verification for smart wallet transactions.
+ *
+ * After a transaction confirms on-chain, verifies the TransferChecked actually
+ * executed by inspecting the confirmed transaction's inner instructions.
+ * Falls back to balance-delta checking if the RPC's transaction index has lag.
+ *
+ * This closes the TOCTOU gap where a malicious program could pass simulation
+ * but skip the transfer during on-chain execution.
+ *
+ * @param signer - Facilitator signer with optional getConfirmedTransactionInnerInstructions
+ * @param signature - Confirmed transaction signature
+ * @param network - CAIP-2 network identifier
+ * @param requirements - Payment requirements (asset, payTo, amount)
+ * @param signerAddresses - Facilitator signer addresses
+ * @param balanceBefore - Destination ATA balance before settlement (for fallback)
+ * @param balanceBeforeTokenProgram - Which token program the balanceBefore was captured from (SPL Token or Token-2022)
+ * @param knownDestinationAta - Destination ATA already identified at verify time.
+ *   When set, both the inner-instruction match and the balance-delta fallback
+ *   query this single account instead of deriving both token-program ATAs.
+ * @returns Whether the transfer was verified on-chain
+ */
+declare function verifyPostSettlement(signer: FacilitatorSvmSigner, signature: string, network: string, requirements: PaymentRequirements, signerAddresses: string[], balanceBefore: bigint | null, balanceBeforeTokenProgram?: string | null, knownDestinationAta?: string | null): Promise<{
+    verified: boolean;
+    method: "innerInstructions" | "balanceDelta" | "unverified";
+}>;
+
+/**
+ * Exact SVM payload structure containing a base64 encoded Solana transaction
+ */
+type ExactSvmPayloadV1 = {
+    /**
+     * Base64 encoded Solana transaction
+     */
+    transaction: string;
+};
+/**
+ * Exact SVM payload V2 structure (currently same as V1, reserved for future extensions)
+ */
+type ExactSvmPayloadV2 = ExactSvmPayloadV1;
+/**
+ * Client authorization for the `upto` SVM scheme.
+ *
+ * The client opens a payment channel whose `deposit` is the authorized ceiling,
+ * with `authorizedSigner` set as the channel `authorized_signer` so the server
+ * can settle the actual metered amount with a single voucher. The client signs
+ * only the `open` transaction; the fee payer broadcasts it. The `from`,
+ * `maxAmount`, `validAfter`, and `expiresAt` fields mirror the network-agnostic
+ * `UptoPayload`; the channel fields are the SVM specialization.
+ *
+ * `voucherSignature` is server-owned and settle-only; verify rejects the field
+ * if present on the client payload.
+ */
+type UptoSvmPayloadV2 = {
+    /** Payer wallet (base58). */
+    from: string;
+    /** Signed ceiling (base units). MUST equal verification-phase `amount`. */
+    maxAmount: string;
+    /** Deadline (Unix seconds); signed into the onchain voucher. */
+    expiresAt: number;
+    /** Activation time (Unix seconds). */
+    validAfter: number;
+    /** Unique per-authorization identifier. */
+    nonce: string;
+    /** Slot encoded in the open instruction and used as a channel PDA seed. */
+    openSlot: string;
+    /** Channel PDA (base58). */
+    channelId: string;
+    /** Onchain escrow ceiling (base units); MUST equal `maxAmount`. */
+    deposit: string;
+    /** Voucher signer; MUST equal `extra.receiverAuthorizer` (base58). */
+    authorizedSigner: string;
+    /** Base64 client-signed `open` transaction for the fee payer to broadcast. */
+    openTransaction: string;
+    /**
+     * Base58 Ed25519 voucher signature by `authorizedSigner`. Settle-only;
+     * verify rejects any client-supplied value (including empty string).
+     * Omitted when the channel delegates receiver authorization to the facilitator.
+     */
+    voucherSignature?: string;
+    /**
+     * Per-settle phase stamped by the resource server. Not part of the client
+     * authorization (that payload is reused for deposit and claim). Verify
+     * rejects it if present. Required when the channel delegates receiver
+     * authorization.
+     */
+    type?: "deposit" | "claim";
+};
+/**
+ * Type guard for {@link UptoSvmPayloadV2}.
+ *
+ * @param payload - The candidate payload (the scheme-specific `PaymentPayload.payload`)
+ * @returns Whether `payload` has the `upto` payment-channel shape
+ */
+declare function isUptoSvmPayload(payload: Record<string, unknown>): payload is UptoSvmPayloadV2;
+
+/**
+ * Token program addresses for SPL Token and Token-2022
+ * These addresses are the same across all Solana networks (mainnet, devnet, testnet)
+ */
+declare const TOKEN_PROGRAM_ADDRESS = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+declare const TOKEN_2022_PROGRAM_ADDRESS = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+declare const COMPUTE_BUDGET_PROGRAM_ADDRESS = "ComputeBudget111111111111111111111111111111";
+declare const MEMO_PROGRAM_ADDRESS = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
+/**
+ * Phantom/Solflare Lighthouse program address
+ * Phantom and Solflare wallets inject Lighthouse instructions for user protection on mainnet transactions.
+ * - Phantom adds 1 Lighthouse instruction (4th instruction)
+ * - Solflare adds 2 Lighthouse instructions (4th and 5th instructions)
+ * We allow these as optional instructions to support these wallets.
+ * See: https://github.com/x402-foundation/x402/issues/828
+ */
+declare const LIGHTHOUSE_PROGRAM_ADDRESS = "L2TExMFKdjpN9kozasaurPirfHy9P8sbXoAN1qA3S95";
+/**
+ * Default RPC URLs for Solana networks
+ */
+declare const DEVNET_RPC_URL = "https://api.devnet.solana.com";
+declare const TESTNET_RPC_URL = "https://api.testnet.solana.com";
+declare const MAINNET_RPC_URL = "https://api.mainnet-beta.solana.com";
+declare const DEVNET_WS_URL = "wss://api.devnet.solana.com";
+declare const TESTNET_WS_URL = "wss://api.testnet.solana.com";
+declare const MAINNET_WS_URL = "wss://api.mainnet-beta.solana.com";
+/**
+ * Compute budget configuration
+ * All prices are in microlamports (1 lamport = 1,000,000 microlamports)
+ */
+declare const DEFAULT_COMPUTE_UNIT_PRICE_MICROLAMPORTS = 1;
+declare const MAX_COMPUTE_UNIT_PRICE_MICROLAMPORTS = 5000000;
+declare const DEFAULT_COMPUTE_UNIT_LIMIT = 20000;
+declare const MAX_MEMO_BYTES = 256;
+/**
+ * How long a transaction is held in the duplicate settlement cache (ms).
+ * Covers the Solana blockhash lifetime (~60-90s) with margin.
+ */
+declare const SETTLEMENT_TTL_MS = 120000;
+/**
+ * Solana address validation regex (base58, 32-44 characters)
+ */
+declare const SVM_ADDRESS_REGEX: RegExp;
+/**
+ * CAIP-2 network identifiers for Solana (V2)
+ */
+declare const SOLANA_MAINNET_CAIP2 = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+declare const SOLANA_DEVNET_CAIP2 = "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1";
+declare const SOLANA_TESTNET_CAIP2 = "solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z";
+/**
+ * V1 to V2 network identifier mappings (for backwards compatibility)
+ * V1 used simple names like solana, V2 uses CAIP-2
+ */
+declare const V1_TO_V2_NETWORK_MAP: Record<string, string>;
+/**
+ * Normalize v1 or CAIP-2 SVM network id to CAIP-2.
+ *
+ * @param network - V1 name or CAIP-2 id
+ * @returns CAIP-2 network identifier
+ */
+declare function normalizeNetwork(network: string): string;
+
+/**
+ * Validate Solana address format
+ *
+ * The regex gates the charset and length; `isAddress` additionally requires the
+ * base58 to decode to 32 bytes, which the regex alone allows through. Anything
+ * looser accepts strings no Solana runtime (or the Go SDK's decoder) would.
+ *
+ * @param address - Base58 encoded address string
+ * @returns true if address is valid, false otherwise
+ */
+declare function validateSvmAddress(address: string): boolean;
+/**
+ * Compute a stable, immutable cache key for a decoded transaction by hashing its
+ * message bytes. The fee-payer signature (slot 0) is overwritten by the facilitator
+ * before broadcast, so an attacker can randomize those bytes to bypass a wire-bytes
+ * cache key. The message is what every signer commits to, making its hash a reliable
+ * payment identity.
+ *
+ * @param transaction - Decoded transaction whose message bytes to hash
+ * @returns Base64-encoded SHA-256 hash of the transaction message bytes
+ */
+declare function transactionMessageHash(transaction: Transaction): string;
+/**
+ * Decode a base64 encoded transaction from an SVM payload
+ *
+ * @param svmPayload - The SVM payload containing a base64 encoded transaction
+ * @returns Decoded Transaction object
+ */
+declare function decodeTransactionFromPayload(svmPayload: ExactSvmPayloadV1): Transaction;
+/**
+ * Extract the token sender (owner of the source token account) from a TransferChecked instruction
+ *
+ * @param transaction - The decoded transaction
+ * @returns The token payer address as a base58 string
+ */
+declare function getTokenPayerFromTransaction(transaction: Transaction): string;
+/**
+ * Create an RPC client for the specified network
+ *
+ * @param network - Network identifier (CAIP-2 or V1 format)
+ * @param customRpcUrl - Optional custom RPC URL
+ * @returns RPC client for the specified network
+ */
+declare function createRpcClient(network: Network, customRpcUrl?: string): RpcDevnet<SolanaRpcApiDevnet> | RpcTestnet<SolanaRpcApiTestnet> | RpcMainnet<SolanaRpcApiMainnet>;
+/**
+ * Resolve the transaction-lifetime blockhash for a payment.
+ *
+ * Prefers a server-provided blockhash carried in the 402 challenge
+ * (`extra.recentBlockhash` + `extra.lastValidBlockHeight`) so the client needn't
+ * make its own RPC round-trip. Falls back to fetching one from `rpc` when the
+ * challenge omits it or contains a malformed value.
+ *
+ * @param rpc - RPC client used for the fallback fetch
+ * @param requirements - The payment requirements (challenge) being paid
+ * @returns The blockhash and its last-valid block height
+ */
+declare function resolveBlockhash(rpc: ReturnType<typeof createRpcClient>, requirements: PaymentRequirements): Promise<{
+    blockhash: Blockhash;
+    lastValidBlockHeight: bigint;
+}>;
+/**
+ * Resolve the channel open-slot anchor (`open_slot` PDA seed) for a payment.
+ *
+ * Prefers a server-provided slot carried in the 402 challenge
+ * (`extra.recentSlot`) so the client needn't make its own RPC round-trip. Falls
+ * back to `rpc.getSlot({ commitment: SLOT_COMMITMENT })` when the challenge
+ * omits it or contains a malformed value. Finalized commitment keeps
+ * `openSlot <= clock.slot` true when the open lands, matching the facilitator.
+ *
+ * @param rpc - RPC client used for the fallback fetch
+ * @param requirements - The payment requirements (challenge) being paid
+ * @returns The open slot as a u64 bigint
+ */
+declare function resolveOpenSlot(rpc: ReturnType<typeof createRpcClient>, requirements: PaymentRequirements): Promise<bigint>;
+/**
+ * Get the default USDC mint address for a network
+ *
+ * @param network - Network identifier (CAIP-2 or V1 format)
+ * @returns USDC mint address for the network
+ */
+declare function getUsdcAddress(network: Network): string;
+/**
+ * Get the mint address for a supported stablecoin on a network.
+ *
+ * @param symbol - Stablecoin symbol
+ * @param network - Network identifier (CAIP-2 or V1 format)
+ * @returns Mint address for the symbol and network
+ */
+declare function getStablecoinAddress(symbol: string, network: Network): string;
+/**
+ * Resolve a stablecoin symbol to a mint address. Unknown values are returned as-is.
+ *
+ * @param currency - Stablecoin symbol or raw mint address
+ * @param network - Network identifier (CAIP-2 or V1 format)
+ * @returns Mint address, undefined for SOL, or the original currency for unknown mints
+ */
+declare function resolveStablecoinMint(currency: string, network: Network): string | undefined;
+/**
+ * Return the supported stablecoin symbol for a symbol or known mint address.
+ *
+ * @param currency - Stablecoin symbol or raw mint address
+ * @returns Supported stablecoin symbol if recognized
+ */
+declare function getStablecoinSymbol(currency: string): string | undefined;
+/**
+ * Return the known token program for a supported stablecoin symbol or mint.
+ * Unknown values default to SPL Token.
+ *
+ * @param currency - Stablecoin symbol or raw mint address
+ * @param network - Network identifier (CAIP-2 or V1 format)
+ * @returns SPL Token or Token-2022 program address
+ */
+declare function getStablecoinTokenProgram(currency: string, network: Network): string;
+/**
+ * Thrown by a {@link PendingSettlementStore}-aware confirmation wait (e.g.
+ * `FacilitatorSvmSigner.confirmTransaction`) when the transaction reached the
+ * chain and failed there — a definite onchain rejection, not a
+ * confirmation-wait timeout whose outcome is still unknown. Callers must
+ * treat this as terminal: release any dedup/pending-settlement lock and
+ * report a failure instead of `settlement_pending`. Any other confirmation
+ * error (timeout or otherwise) is treated conservatively as non-terminal,
+ * since a fresh broadcast while the original might still land risks a
+ * double-spend.
+ */
+declare class TransactionOnchainFailureError extends Error {
+    /**
+     * Create the error for a transaction that reached the chain and failed there.
+     *
+     * @param message - Description of the onchain failure, e.g. the decoded transaction error
+     */
+    constructor(message: string);
+}
+/**
+ * Persists `signature` under `key` in `store` so a subsequent settle attempt
+ * for the same payload can reconcile against it instead of re-broadcasting,
+ * then returns the `settlement_pending` response carrying `error`'s message.
+ *
+ * If the store write itself fails, a later retry has no record to reconcile
+ * against — returning `settlement_pending` regardless would let it blindly
+ * re-verify/re-broadcast and risk a double-send. In that case this instead
+ * returns a terminal failure (`terminalReason`), preserving `signature` for
+ * manual reconciliation.
+ *
+ * @param store - The pending-settlement store to update
+ * @param key - Deterministic key for this payload (e.g. a signature or channel id)
+ * @param signature - The broadcast signature to persist and report
+ * @param payer - The payer address
+ * @param network - Network the transaction was broadcast to
+ * @param pendingReason - Error reason to report when the store write succeeds
+ * @param terminalReason - Error reason to report when the store write fails
+ * @param error - The confirmation-wait error that triggered this call
+ * @returns The settlement_pending or terminal SettleResponse
+ */
+declare function recordPendingOrTerminal(store: PendingSettlementStore, key: string, signature: string, payer: string, network: Network, pendingReason: string, terminalReason: string, error: unknown): Promise<SettleResponse>;
+
+export { BATCH_SETTLEMENT_SCHEME, BatchAuthorization, COMPUTE_BUDGET_PROGRAM_ADDRESS, CloseAuthorization, type CloseAuthorizationBinding, DEFAULT_COMPUTE_UNIT_LIMIT, DEFAULT_COMPUTE_UNIT_PRICE_MICROLAMPORTS, DEVNET_RPC_URL, DEVNET_WS_URL, type ExactSvmPayloadV1, type ExactSvmPayloadV2, FacilitatorSvmSigner, LIGHTHOUSE_PROGRAM_ADDRESS, MAINNET_RPC_URL, MAINNET_WS_URL, MAX_COMPUTE_UNIT_PRICE_MICROLAMPORTS, MAX_MEMO_BYTES, MEMO_PROGRAM_ADDRESS, SETTLEMENT_TTL_MS, SOLANA_DEVNET_CAIP2, SOLANA_MAINNET_CAIP2, SOLANA_TESTNET_CAIP2, SVM_ADDRESS_REGEX, type SmartWalletLimits, type SmartWalletOptions, SvmInnerInstructionsResult, TESTNET_RPC_URL, TESTNET_WS_URL, TOKEN_2022_PROGRAM_ADDRESS, TOKEN_PROGRAM_ADDRESS, TransactionOnchainFailureError, type TransferCheckedInfo, type UptoSvmPayloadV2, V1_TO_V2_NETWORK_MAP, assertFeePayerIsolated, assertSmartWalletLimits, createRpcClient, decodeTransactionFromPayload, encodeBatchAuthorizationMessage, encodeCloseAuthorizationDigest, extractTransfersFromInnerInstructions, getStablecoinAddress, getStablecoinSymbol, getStablecoinTokenProgram, getTokenPayerFromTransaction, getUsdcAddress, isUptoSvmPayload, normalizeNetwork, recordPendingOrTerminal, resolveBlockhash, resolveOpenSlot, resolveStablecoinMint, signBatchAuthorization, signCloseAuthorization, transactionMessageHash, validateComputeBudgetLimits, validateSvmAddress, verifyBatchAuthorization, verifyCloseAuthorization, verifyPostSettlement, verifySmartWalletTransaction };
+
+########## shared type declarations ##########
+
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts:9:type ExactSvmSchemeOptions = {
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-10-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-11-     * Enable simulation-based smart wallet verification.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-12-     * When enabled, transactions rejected by the static validation path
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-13-     * (unknown programs, wrong instruction count) are re-verified using
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-14-     * simulation inner instruction analysis. Works for any smart wallet
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-15-     * program (Squads, Swig, SPL Governance, etc.) without per-wallet parsers.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-16-     *
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-17-     * Default: false (only standard wallet transactions are accepted)
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-18-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-19-    enableSmartWalletVerification?: boolean;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-20-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-21-     * Maximum compute units allowed for smart wallet transactions.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-22-     * Smart wallet programs need more CU for CPI overhead.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-23-     * Only applies when enableSmartWalletVerification is true.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-24-     * Invalid configured values throw when smart wallet verification is enabled.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-25-     *
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-26-     * Default: 400,000
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-27-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-28-    smartWalletMaxComputeUnits?: number;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-29-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-30-     * Maximum priority fee in microlamports for smart wallet transactions.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-31-     * Only applies when enableSmartWalletVerification is true.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-32-     * Invalid configured values throw when smart wallet verification is enabled.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-33-     *
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-34-     * Default: 50,000
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-35-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-36-    smartWalletMaxPriorityFeeMicroLamports?: number;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-37-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-38-     * Allowed smart wallet program addresses for Path 2 verification.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts-39-     * Only transactions whose top-level non-ComputeBudget instruction invokes
+--
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/scheme-BcpmRJSH.d.mts:217:export { ExactSvmScheme as E, type ExactSvmSchemeOptions as a };
+--
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts:7:type ClientSvmSigner = TransactionSigner;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-8-/**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-9- * Configuration for client operations
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-10- */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts:11:type ClientSvmConfig = {
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-12-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-13-     * Optional custom RPC URL for the client to use
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-14-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-15-    rpcUrl?: string;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-16-};
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-17-/**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-18- * Signing capabilities needed by the facilitator
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-19- * Must support both transaction and message signing
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-20- * KeyPairSigner from @solana/kit satisfies this interface
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-21- */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-22-type FacilitatorSigningCapabilities = TransactionSigner & MessagePartialSigner;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-23-/**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-24- * RPC client type from @solana/kit
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-25- * Can be devnet, testnet, or mainnet RPC client
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-26- */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-27-type FacilitatorRpcClient = RpcDevnet<SolanaRpcApiDevnet> | RpcTestnet<SolanaRpcApiTestnet> | RpcMainnet<SolanaRpcApiMainnet>;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-28-/** Options passed to {@link FacilitatorSvmSigner.simulateTransaction}. */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-29-type FacilitatorSimulateTransactionOptions = {
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-30-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-31-     * When true, the RPC verifies signatures during simulation. Defaults to false
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-32-     * because the fee-payer slot is often unsigned until settle.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-33-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-34-    sigVerify?: boolean;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-35-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-36-     * When true, the RPC substitutes a fresh blockhash before simulating (for
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-37-     * facilitator-built messages compiled against a placeholder). Defaults to false.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-38-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-39-    replaceRecentBlockhash?: boolean;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-40-    /** Simulation commitment. Defaults to `"confirmed"`. */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-41-    commitment?: string;
+--
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts:50:type FacilitatorSvmSigner = {
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-51-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-52-     * Get all addresses this facilitator can use as fee payers
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-53-     * Enables dynamic address selection for load balancing and key rotation
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-54-     *
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-55-     * @returns Array of addresses available for signing
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-56-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-57-    getAddresses(): readonly Address[];
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-58-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-59-     * Resolve the kit-native signer for a fee-payer address.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-60-     * Required by schemes that build transactions from instructions (e.g. upto);
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-61-     * wire-level schemes such as exact omit this.
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-62-     *
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-63-     * @param feePayer - Fee payer address
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-64-     * @returns Kit TransactionSigner & MessagePartialSigner for that address
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-65-     * @throws Error if no signer exists for feePayer
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-66-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-67-    getSigner?(feePayer: Address): FacilitatorSigningCapabilities;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-68-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-69-     * Sign a partially-signed transaction with the signer matching feePayer
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-70-     * Transaction is decoded, signed, and re-encoded internally
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-71-     *
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-72-     * @param transaction - Base64 encoded partially-signed transaction
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-73-     * @param feePayer - Fee payer address (determines which signer to use)
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-74-     * @param network - CAIP-2 network identifier
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-75-     * @returns Base64 encoded fully-signed transaction
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-76-     * @throws Error if no signer exists for feePayer or signing fails
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-77-     */
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-78-    signTransaction(transaction: string, feePayer: Address, network: string): Promise<string>;
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-79-    /**
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts-80-     * Simulate a transaction to verify it would succeed onchain.
+--
+node_modules/.pnpm/@x402+svm@2.28.0_@solana+kit@6.10.0_typescript@5.9.3__@solana+sysvars@5.5.1_typescript@5.9.3__typescript@5.9.3/node_modules/@x402/svm/dist/esm/signer-gUqhJy7y.d.mts:309:export { type ClientSvmSigner as C, type FacilitatorSvmSigner as F, type SvmInnerInstructionsResult as S, type ClientSvmConfig as a, toFacilitatorSvmSigner as b, type FacilitatorAccountInfo as c, type FacilitatorProgramAccount as d, type FacilitatorSimulateTransactionOptions as e, type FacilitatorRpcClient as f, type FacilitatorRpcConfig as g, toClientSvmSigner as t };

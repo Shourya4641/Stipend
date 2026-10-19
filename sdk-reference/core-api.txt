@@ -1,0 +1,705 @@
+### DIR=node_modules/.pnpm/@x402+core@2.28.0/node_modules/@x402/core
+
+########## facilitator/index.d.mts ##########
+
+import { P as PaymentPayload, I as PaymentRequirements, V as VerifyResponse, S as SettleResponse, N as Network, J as SchemeNetworkFacilitator, K as FacilitatorExtension } from '../x402Client-C7_OogbK.mjs';
+
+/**
+ * Facilitator Hook Context Interfaces
+ */
+interface FacilitatorVerifyContext {
+    paymentPayload: PaymentPayload;
+    requirements: PaymentRequirements;
+}
+interface FacilitatorVerifyResultContext extends FacilitatorVerifyContext {
+    result: VerifyResponse;
+}
+interface FacilitatorVerifyFailureContext extends FacilitatorVerifyContext {
+    error: Error;
+}
+interface FacilitatorSettleContext {
+    paymentPayload: PaymentPayload;
+    requirements: PaymentRequirements;
+}
+interface FacilitatorSettleResultContext extends FacilitatorSettleContext {
+    result: SettleResponse;
+}
+interface FacilitatorSettleFailureContext extends FacilitatorSettleContext {
+    error: Error;
+}
+/**
+ * Facilitator Hook Type Definitions
+ */
+type FacilitatorBeforeVerifyHook = (context: FacilitatorVerifyContext) => Promise<void | {
+    abort: true;
+    reason: string;
+}>;
+type FacilitatorAfterVerifyHook = (context: FacilitatorVerifyResultContext) => Promise<void>;
+type FacilitatorOnVerifyFailureHook = (context: FacilitatorVerifyFailureContext) => Promise<void | {
+    recovered: true;
+    result: VerifyResponse;
+}>;
+type FacilitatorBeforeSettleHook = (context: FacilitatorSettleContext) => Promise<void | {
+    abort: true;
+    reason: string;
+}>;
+type FacilitatorAfterSettleHook = (context: FacilitatorSettleResultContext) => Promise<void>;
+type FacilitatorOnSettleFailureHook = (context: FacilitatorSettleFailureContext) => Promise<void | {
+    recovered: true;
+    result: SettleResponse;
+}>;
+/**
+ * Facilitator client for the x402 payment protocol.
+ * Manages payment scheme registration, verification, and settlement.
+ */
+declare class x402Facilitator {
+    private readonly registeredFacilitatorSchemes;
+    private readonly extensions;
+    private beforeVerifyHooks;
+    private afterVerifyHooks;
+    private onVerifyFailureHooks;
+    private beforeSettleHooks;
+    private afterSettleHooks;
+    private onSettleFailureHooks;
+    /**
+     * Registers a scheme facilitator for the current x402 version.
+     * Networks are stored and used for getSupported() - no need to specify them later.
+     *
+     * @param networks - Single network or array of networks this facilitator supports
+     * @param facilitator - The scheme network facilitator to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    register(networks: Network | Network[], facilitator: SchemeNetworkFacilitator): x402Facilitator;
+    /**
+     * Registers a scheme facilitator for x402 version 1.
+     * Networks are stored and used for getSupported() - no need to specify them later.
+     *
+     * @param networks - Single network or array of networks this facilitator supports
+     * @param facilitator - The scheme network facilitator to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    registerV1(networks: Network | Network[], facilitator: SchemeNetworkFacilitator): x402Facilitator;
+    /**
+     * Registers a protocol extension.
+     *
+     * @param extension - The extension object to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    registerExtension(extension: FacilitatorExtension): x402Facilitator;
+    /**
+     * Gets the list of registered extension keys.
+     *
+     * @returns Array of extension key strings
+     */
+    getExtensions(): string[];
+    /**
+     * Gets a registered extension by key.
+     *
+     * @param key - The extension key to look up
+     * @returns The extension object, or undefined if not registered
+     */
+    getExtension<T extends FacilitatorExtension = FacilitatorExtension>(key: string): T | undefined;
+    /**
+     * Register a hook to execute before facilitator payment verification.
+     * Can abort verification by returning { abort: true, reason: string }
+     *
+     * @param hook - The hook function to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    onBeforeVerify(hook: FacilitatorBeforeVerifyHook): x402Facilitator;
+    /**
+     * Register a hook to execute after successful facilitator payment verification (isValid: true).
+     * This hook is NOT called when verification fails (isValid: false) - use onVerifyFailure for that.
+     *
+     * @param hook - The hook function to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    onAfterVerify(hook: FacilitatorAfterVerifyHook): x402Facilitator;
+    /**
+     * Register a hook to execute when facilitator payment verification fails.
+     * Called when: verification returns isValid: false, or an exception is thrown during verification.
+     * Can recover from failure by returning { recovered: true, result: VerifyResponse }
+     *
+     * @param hook - The hook function to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    onVerifyFailure(hook: FacilitatorOnVerifyFailureHook): x402Facilitator;
+    /**
+     * Register a hook to execute before facilitator payment settlement.
+     * Can abort settlement by returning { abort: true, reason: string }
+     *
+     * @param hook - The hook function to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    onBeforeSettle(hook: FacilitatorBeforeSettleHook): x402Facilitator;
+    /**
+     * Register a hook to execute after successful facilitator payment settlement.
+     *
+     * @param hook - The hook function to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    onAfterSettle(hook: FacilitatorAfterSettleHook): x402Facilitator;
+    /**
+     * Register a hook to execute when facilitator payment settlement fails.
+     * Can recover from failure by returning { recovered: true, result: SettleResponse }
+     *
+     * @param hook - The hook function to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    onSettleFailure(hook: FacilitatorOnSettleFailureHook): x402Facilitator;
+    /**
+     * Gets supported payment kinds, extensions, and signers.
+     * Uses networks registered during register() calls - no parameters needed.
+     * Returns flat array format for backward compatibility with V1 clients.
+     *
+     * @returns Supported response with kinds as array (with version in each element), extensions, and signers
+     */
+    getSupported(): {
+        kinds: Array<{
+            x402Version: number;
+            scheme: string;
+            network: string;
+            extra?: Record<string, unknown>;
+        }>;
+        extensions: string[];
+        signers: Record<string, string[]>;
+    };
+    /**
+     * Verifies a payment payload against requirements.
+     *
+     * @param paymentPayload - The payment payload to verify
+     * @param paymentRequirements - The payment requirements to verify against
+     * @returns Promise resolving to the verification response
+     */
+    verify(paymentPayload: PaymentPayload, paymentRequirements: PaymentRequirements): Promise<VerifyResponse>;
+    /**
+     * Settles a payment based on the payload and requirements.
+     *
+     * @param paymentPayload - The payment payload to settle
+     * @param paymentRequirements - The payment requirements for settlement
+     * @returns Promise resolving to the settlement response
+     */
+    settle(paymentPayload: PaymentPayload, paymentRequirements: PaymentRequirements): Promise<SettleResponse>;
+    /**
+     * Builds a FacilitatorContext from the registered extensions map.
+     * Passed to mechanism verify/settle so they can access extension capabilities.
+     *
+     * @returns A FacilitatorContext backed by this facilitator's registered extensions
+     */
+    private buildFacilitatorContext;
+    /**
+     * Internal method to register a scheme facilitator.
+     *
+     * @param x402Version - The x402 protocol version
+     * @param networks - Array of concrete networks this facilitator supports
+     * @param facilitator - The scheme network facilitator to register
+     * @returns The x402Facilitator instance for chaining
+     */
+    private _registerScheme;
+    /**
+     * Derives a wildcard pattern from an array of networks.
+     * If all networks share the same namespace, returns wildcard pattern.
+     * Otherwise returns the first network for exact matching.
+     *
+     * @param networks - Array of networks
+     * @returns Derived pattern for matching
+     */
+    private derivePattern;
+}
+
+/**
+ * TTL applied by the default in-memory {@link PendingSettlementStore}
+ * implementation. A store implementation backed by a different mechanism
+ * (e.g. Redis, for a multi-instance facilitator) is free to use its own TTL —
+ * this constant only governs {@link InMemoryPendingSettlementStore}.
+ */
+declare const PENDING_SETTLEMENT_TTL_MS: number;
+/**
+ * Lets a facilitator-side mechanism remember a broadcast-but-not-yet-confirmed
+ * transaction hash, keyed by a deterministic identifier derived from the
+ * payment payload (e.g. an EIP-3009/Permit2 signature, or an SVM message
+ * hash/channel id). When a settle attempt's receipt/confirmation wait fails,
+ * the mechanism stores the broadcast hash here before returning a
+ * `settlement_pending` error. On a subsequent settle attempt for the same
+ * payload (typically the resource server's single automatic retry — see
+ * `x402ResourceServer.settlePayment`), the mechanism checks this store first
+ * and, on a hit, reconciles against the already-broadcast transaction instead
+ * of verifying and broadcasting a second one.
+ *
+ * This is an interface — not a concrete type — specifically so a
+ * multi-instance facilitator (running several replicas with no session
+ * affinity) can supply a shared, network-backed implementation (e.g. Redis)
+ * instead of the in-memory default, which only works when a retry happens to
+ * land back on the same process. Implementations must be safe for concurrent
+ * use. Mechanism code must depend only on this interface, never on
+ * {@link InMemoryPendingSettlementStore} directly.
+ */
+interface PendingSettlementStore {
+    /**
+     * Returns the previously stored transaction hash for `key`, if any.
+     * Returns `undefined` when there is no entry (including one that has
+     * expired).
+     *
+     * @param key - Deterministic identifier derived from the payment payload
+     * @returns The stored transaction hash, or `undefined` when absent
+     */
+    get(key: string): Promise<string | undefined>;
+    /**
+     * Records that `key`'s payment broadcast `txHash` but has not yet been
+     * confirmed. A subsequent `set` for the same key overwrites the prior
+     * value.
+     *
+     * @param key - Deterministic identifier derived from the payment payload
+     * @param txHash - The broadcast transaction hash
+     */
+    set(key: string, txHash: string): Promise<void>;
+    /**
+     * Removes any pending entry for `key`, e.g. once the transaction is
+     * confirmed (success) or the mechanism determines it terminally failed.
+     *
+     * @param key - Deterministic identifier derived from the payment payload
+     */
+    delete(key: string): Promise<void>;
+}
+/**
+ * The default {@link PendingSettlementStore} implementation: a per-process
+ * `Map` with lazy TTL pruning (mirrors the shape of
+ * `@x402/mechanisms-svm`'s `SettlementCache`). It never performs network
+ * I/O — `get` additionally prunes expired entries (O(n) in the number of
+ * currently-stored entries, which stays small since entries only exist while
+ * a settlement is genuinely pending), so every call adds no meaningful
+ * latency to the settle hot path.
+ *
+ * Node.js is single-threaded, so no lock is required here. Suitable for
+ * single-instance facilitators; multi-instance deployments should inject a
+ * shared, network-backed {@link PendingSettlementStore} implementation
+ * instead (e.g. Redis).
+ */
+declare class InMemoryPendingSettlementStore implements PendingSettlementStore {
+    private readonly entries;
+    /**
+     * Returns the previously stored transaction hash for `key`, if any.
+     *
+     * @param key - Deterministic identifier derived from the payment payload
+     * @returns The stored transaction hash, or `undefined` when absent/expired
+     */
+    get(key: string): Promise<string | undefined>;
+    /**
+     * Records that `key`'s payment broadcast `txHash` but has not yet been
+     * confirmed.
+     *
+     * @param key - Deterministic identifier derived from the payment payload
+     * @param txHash - The broadcast transaction hash
+     */
+    set(key: string, txHash: string): Promise<void>;
+    /**
+     * Removes any pending entry for `key`.
+     *
+     * @param key - Deterministic identifier derived from the payment payload
+     */
+    delete(key: string): Promise<void>;
+    /**
+     * Returns a snapshot of the underlying map — use only in tests.
+     *
+     * @returns A plain object mapping each stored key to its transaction hash
+     */
+    entriesSnapshot(): Record<string, string>;
+    /**
+     * Removes entries older than {@link PENDING_SETTLEMENT_TTL_MS}.
+     */
+    private prune;
+}
+
+export { type FacilitatorAfterSettleHook, type FacilitatorAfterVerifyHook, type FacilitatorBeforeSettleHook, type FacilitatorBeforeVerifyHook, type FacilitatorOnSettleFailureHook, type FacilitatorOnVerifyFailureHook, type FacilitatorSettleContext, type FacilitatorSettleFailureContext, type FacilitatorSettleResultContext, type FacilitatorVerifyContext, type FacilitatorVerifyFailureContext, type FacilitatorVerifyResultContext, InMemoryPendingSettlementStore, PENDING_SETTLEMENT_TTL_MS, type PendingSettlementStore, x402Facilitator };
+
+########## x402ResourceServer + HTTPFacilitatorClient ##########
+
+ * Can be implemented for HTTP-based or local facilitators
+ */
+interface FacilitatorClient {
+    /**
+     * Verify a payment with the facilitator
+     *
+     * @param paymentPayload - The payment to verify
+     * @param paymentRequirements - The requirements to verify against
+     * @returns Verification response
+     */
+    verify(paymentPayload: PaymentPayload, paymentRequirements: PaymentRequirements): Promise<VerifyResponse>;
+    /**
+     * Settle a payment with the facilitator
+     *
+     * @param paymentPayload - The payment to settle
+     * @param paymentRequirements - The requirements for settlement
+     * @returns Settlement response
+     */
+    settle(paymentPayload: PaymentPayload, paymentRequirements: PaymentRequirements): Promise<SettleResponse>;
+    /**
+     * Get supported payment kinds and extensions from the facilitator
+     *
+     * @returns Supported payment kinds and extensions
+     */
+    getSupported(): Promise<SupportedResponse>;
+}
+/**
+ * HTTP-based client for interacting with x402 facilitator services
+ * Handles HTTP communication with facilitator endpoints
+ */
+declare class HTTPFacilitatorClient implements FacilitatorClient {
+    readonly url: string;
+    /** Per-request timeout for facilitator HTTP calls, in milliseconds. */
+    readonly timeoutMs: number;
+    private readonly _createAuthHeaders?;
+    /**
+     * Creates a new HTTPFacilitatorClient instance.
+     *
+     * @param config - Configuration options for the facilitator client
+     */
+    constructor(config?: FacilitatorConfig);
+    /**
+     * Verify a payment with the facilitator
+     *
+     * @param paymentPayload - The payment to verify
+     * @param paymentRequirements - The requirements to verify against
+     * @returns Verification response
+     */
+    verify(paymentPayload: PaymentPayload, paymentRequirements: PaymentRequirements): Promise<VerifyResponse>;
+    /**
+     * Settle a payment with the facilitator
+     *
+     * @param paymentPayload - The payment to settle
+     * @param paymentRequirements - The requirements for settlement
+     * @returns Settlement response
+     */
+    settle(paymentPayload: PaymentPayload, paymentRequirements: PaymentRequirements): Promise<SettleResponse>;
+    /**
+     * Get supported payment kinds and extensions from the facilitator.
+     * Retries with exponential backoff on 429 rate limit errors.
+     *
+     * @returns Supported payment kinds and extensions
+     */
+    getSupported(): Promise<SupportedResponse>;
+    /**
+     * Creates authentication headers for a specific path.
+     *
+     * @param path - The path to create authentication headers for (e.g., "verify", "settle", "supported")
+     * @returns An object containing the authentication headers for the specified path
+     */
+    createAuthHeaders(path: string): Promise<{
+        headers: Record<string, string>;
+    }>;
+    /**
+     * Runs a single facilitator HTTP attempt under this client's request deadline.
+     * The provided signal must be passed to `fetch` so the deadline also covers
+     * response-body consumption.
+     *
+     * @param operation - The facilitator operation name ("verify", "settle", "supported")
+     * @param run - The attempt to execute with the deadline's AbortSignal
+     * @returns The attempt's result
+     * @throws FacilitatorTimeoutError when the deadline elapses before completion
+     */
+    private withRequestTimeout;
+    /**
+     * Helper to convert objects to JSON-safe format.
+     * Handles BigInt and other non-JSON types.
+     *
+     * @param obj - The object to convert
+     * @returns The JSON-safe representation of the object
+     */
+    private toJsonSafe;
+}
+
+/**
+ * Which settle invocation is running for a payment.
+ *
+ * - `before-handler` — settle before the resource handler (e.g. escrow deposit)
+ * - `after-handler` — settle after the resource handler (authorization charge, escrow charge)
+ * - `cancel` — refund/close settle from verified-payment cancellation
+ *
+     *
+     * The resolved amount must be <= the authorized maximum in `PaymentRequirements`.
+     *
+     * Note: Setting this to an amount other than `PaymentRequirements.amount` is
+     * only valid in schemes that support partial settlement, such as `upto`.
+     */
+    amount?: string;
+}
+/**
+ * Core x402 protocol server for resource protection
+ * Transport-agnostic implementation of the x402 payment protocol
+ */
+declare class x402ResourceServer {
+    private facilitatorClients;
+    private registeredServerSchemes;
+    private schemeHookAdapters;
+    private supportedResponsesMap;
+    private facilitatorClientsMap;
+    private registeredExtensions;
+    private extensionHookAdapters;
+    private beforeVerifyHooks;
+    private afterVerifyHooks;
+    private onVerifyFailureHooks;
+    private beforeSettleHooks;
+    private afterSettleHooks;
+    private onSettleFailureHooks;
+    private onVerifiedPaymentCanceledHooks;
+    /**
+     * Creates a new x402ResourceServer instance.
+     *
+     * @param facilitatorClients - Optional facilitator client(s) for payment processing
+     */
+    constructor(facilitatorClients?: FacilitatorClient | FacilitatorClient[]);
+    /**
+     * Register a scheme/network server implementation.
+     *
+     * @param network - The network identifier
+     * @param server - The scheme/network server implementation
+     * @returns The x402ResourceServer instance for chaining
+     */
+    register(network: Network, server: SchemeNetworkServer): x402ResourceServer;
+    /**
+     * Check if a scheme is registered for a given network.
+     *
+     * @param network - The network identifier
+     * @param scheme - The payment scheme name
+     * @returns True if the scheme is registered for the network, false otherwise
+     */
+    hasRegisteredScheme(network: Network, scheme: string): boolean;
+    /**
+     * Get the registered scheme implementation for a network and scheme name.
+     *
+     * @param network - The network identifier
+     * @param scheme - The payment scheme name
+     * @returns The registered scheme, or undefined if none is registered
+     */
+    getRegisteredScheme(network: Network, scheme: string): SchemeNetworkServer | undefined;
+    /**
+     * Returns the decimal precision for display of the asset in the given payment
+     * requirements. Looks up the registered scheme and delegates to getAssetDecimals
+     * when available. Falls back to 6 for display-only callers. Settlement `$…`
+     * overrides must not use this fallback — they throw when decimals are unknown.
+     *
+     * @param requirements - The payment requirements containing scheme, network, and asset
+     * @returns The number of decimal places for the asset
+     */
+    getAssetDecimalsForRequirements(requirements: PaymentRequirements): number;
+    /**
+     * Registers a resource server extension (enrichment and optional verify/settle hooks).
+     * Re-registering the same key overwrites; omitting `hooks` removes adapter handles for that key.
+     *
+     * @param extension - Extension definition including `key` and optional `hooks`
+     * @returns This server instance for chaining
+     */
+    registerExtension(extension: ResourceServerExtension): this;
+    /**
+     * Check if an extension is registered.
+     *
+     * @param key - The extension key
+     * @returns True if the extension is registered
+     */
+    hasExtension(key: string): boolean;
+    /**
+     * Get all registered extensions.
+     *
+     * @returns Array of registered extensions
+     */
+    getExtensions(): ResourceServerExtension[];
+    /**
+     * Enriches declared extensions using registered extension hooks.
+     *
+     * @param declaredExtensions - Extensions declared on the route
+     * @param transportContext - Transport-specific context (HTTP, A2A, MCP, etc.)
+     * @returns Enriched extensions map
+     */
+    enrichExtensions(declaredExtensions: Record<string, unknown>, transportContext: unknown): Record<string, unknown>;
+    /**
+     * Register a hook to execute before payment verification.
+     * Can abort verification by returning { abort: true, reason: string }
+     *
+     * @param hook - The hook function to register
+     * @returns The x402ResourceServer instance for chaining
+     */
+    onBeforeVerify(hook: BeforeVerifyHook): x402ResourceServer;
+    /**
+     * Register a hook to execute after successful payment verification.
+     *
+     * @param hook - The hook function to register
+     * @returns The x402ResourceServer instance for chaining
+     */
+    onAfterVerify(hook: AfterVerifyHook): x402ResourceServer;
+    /**
+     * Register a hook to execute when payment verification fails.
+     * Can recover from failure by returning { recovered: true, result: VerifyResponse }
+     *
+     * @param hook - The hook function to register
+     * @returns The x402ResourceServer instance for chaining
+     */
+    onVerifyFailure(hook: OnVerifyFailureHook): x402ResourceServer;
+    /**
+     * Register a hook to execute before payment settlement.
+     * Can abort settlement by returning { abort: true, reason: string }
+     *
+     * @param hook - The hook function to register
+     * @returns The x402ResourceServer instance for chaining
+     */
+    onBeforeSettle(hook: BeforeSettleHook): x402ResourceServer;
+    /**
+     * Register a hook to execute after successful payment settlement.
+     *
+     * @param hook - The hook function to register
+     * @returns The x402ResourceServer instance for chaining
+     */
+    onAfterSettle(hook: AfterSettleHook): x402ResourceServer;
+    /**
+     * Register a hook to execute when payment settlement fails.
+     * Can recover from failure by returning { recovered: true, result: SettleResponse }
+     *
+     * @param hook - The hook function to register
+     * @returns The x402ResourceServer instance for chaining
+     */
+    onSettleFailure(hook: OnSettleFailureHook): x402ResourceServer;
+    /**
+     * Register a hook to execute when verified payment work is canceled before settlement.
+     *
+     * @param hook - The hook function to register
+     * @returns The x402ResourceServer instance for chaining
+     */
+    onVerifiedPaymentCanceled(hook: OnVerifiedPaymentCanceledHook): x402ResourceServer;
+    /**
+     * Initialize by fetching supported kinds from all facilitators
+
+########## RoutesConfig / RouteConfig / PaymentRequirements ##########
+
+862:interface RouteConfig {
+863-    accepts: PaymentOption | PaymentOption[];
+864-    resource?: string;
+865-    description?: string;
+866-    mimeType?: string;
+867-    serviceName?: string;
+868-    tags?: string[];
+869-    iconUrl?: string;
+870-    customPaywallHtml?: string;
+871-    /**
+872-     * Optional callback to generate a custom response for unpaid API requests.
+873-     * This allows servers to return preview data, error messages, or other content
+874-     * when a request lacks payment.
+875-     *
+876-     * For browser requests (Accept: text/html), the paywall HTML takes precedence.
+877-     * This callback is only used for API clients.
+878-     *
+879-     * If not provided, defaults to { contentType: 'application/json', body: {} }.
+880-     *
+881-     * @param context - The HTTP request context
+882-     * @returns An object containing both contentType and body for the 402 response
+883-     */
+884-    unpaidResponseBody?: UnpaidResponseBody;
+885-    /**
+886-     * Optional callback to generate a custom response for settlement failures.
+887-     * If not provided, defaults to { contentType: 'application/json', body: {} }.
+--
+899:type RoutesConfig = Record<string, RouteConfig> | RouteConfig;
+900-/**
+901- * Check if any routes in the configuration declare bazaar extensions.
+902- *
+903- * @param routes - Route configuration
+904- * @returns True if any route has extensions.bazaar defined
+905- */
+906-declare function checkIfBazaarNeeded(routes: RoutesConfig): boolean;
+907-/**
+908- * Hook that runs on every request to a protected route, before payment processing.
+909- * Can grant access without payment, deny the request, or continue to payment flow.
+910- *
+911- * @returns
+912- * - `void` - Continue to payment processing (default behavior)
+913- * - `{ grantAccess: true }` - Grant access without requiring payment
+914- * - `{ abort: true; reason: string }` - Deny the request (returns 403)
+915- */
+916-type ProtectedRequestHook = (context: HTTPRequestContext, routeConfig: RouteConfig) => Promise<void | {
+917-    grantAccess: true;
+918-} | {
+919-    abort: true;
+920-    reason: string;
+921-}>;
+922-interface HTTPResourceServerExtensionHooks {
+923-    onProtectedRequest?: (declaration: unknown, context: HTTPRequestContext, routeConfig: RouteConfig) => Promise<void | {
+924-        grantAccess: true;
+--
+1375:type PaymentRequirements = {
+1376-    scheme: string;
+1377-    network: Network;
+1378-    asset: string;
+1379-    amount: string;
+1380-    payTo: string;
+1381-    maxTimeoutSeconds: number;
+1382-    extra: Record<string, unknown>;
+1383-};
+1384-type PaymentRequired = {
+1385-    x402Version: number;
+1386-    error?: string;
+1387-    resource: ResourceInfo;
+1388-    accepts: PaymentRequirements[];
+1389-    extensions?: Record<string, unknown>;
+1390-};
+1391-type PaymentPayload = {
+1392-    x402Version: number;
+1393-    resource?: ResourceInfo;
+1394-    accepted: PaymentRequirements;
+1395-    payload: Record<string, unknown>;
+1396-    extensions?: Record<string, unknown>;
+1397-};
+1398-
+1399-type VerifyRequest = {
+1400-    x402Version: number;
+--
+1404:type VerifyResponse = {
+1405-    isValid: boolean;
+1406-    invalidReason?: string;
+1407-    invalidMessage?: string;
+1408-    payer?: string;
+1409-    extensions?: Record<string, unknown>;
+1410-    extensionResponses?: Record<string, unknown>;
+1411-    extra?: Record<string, unknown>;
+1412-};
+1413-type SettleRequest = {
+1414-    x402Version: number;
+1415-    paymentPayload: PaymentPayload;
+1416-    paymentRequirements: PaymentRequirements;
+1417-};
+1418:type SettleResponse = {
+1419-    success: boolean;
+1420-    errorReason?: string;
+1421-    errorMessage?: string;
+1422-    payer?: string;
+1423-    transaction: string;
+1424-    network: Network;
+1425-    /** Actual amount settled in atomic token units. Present for schemes like `upto` where settlement amount may differ from the authorized maximum. */
+1426-    amount?: string;
+1427-    extensions?: Record<string, unknown>;
+1428-    extensionResponses?: Record<string, unknown>;
+1429-    extra?: Record<string, unknown>;
+1430-};
+1431:type SupportedKind = {
+1432-    x402Version: number;
+1433-    scheme: string;
+1434-    network: Network;
+1435-    extra?: Record<string, unknown>;
+1436-};
+1437-type SupportedResponse = {
+1438-    kinds: SupportedKind[];
+1439-    extensions: string[];
+1440-    signers: Record<string, string[]>;
+1441-};
+1442-/**
+1443- * Error thrown when payment verification fails.
+1444- */
+1445-declare class VerifyError extends Error {
+1446-    readonly invalidReason?: string;
+1447-    readonly invalidMessage?: string;
+1448-    readonly payer?: string;
+1449-    readonly statusCode: number;
+1450-    /**
+1451-     * Creates a VerifyError from a failed verification response.
+1452-     *
+1453-     * @param statusCode - HTTP status code from the facilitator
+1454-     * @param response - The verify response containing failure details
+1455-     */
+1456-    constructor(statusCode: number, response: VerifyResponse);

@@ -1,0 +1,37 @@
+{
+  "name": "stipend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.14.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.14.0",
+  "type": "module",
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@solana-program/token": "0.9.0",
+    "@solana/kit": "^6.10.0",
+    "@x402/core": "2.28.0",
+    "@x402/express": "2.28.0",
+    "@x402/fetch": "2.28.0",
+    "@x402/svm": "2.28.0",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0"
+  }
+}

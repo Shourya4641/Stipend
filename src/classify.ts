@@ -69,15 +69,20 @@ export function classify(input: ClassifyInput): Classification {
     refusalKind,
   } = input;
 
+  // SettleResponse.transaction is a REQUIRED string in @x402/core, so a
+  // refusal that never broadcast arrives as "". Normalise here rather than
+  // trusting every caller: an empty signature must never read as "broadcast".
+  const sig = signature && signature.trim().length > 0 ? signature : undefined;
+
   const expiredByHeight = currentBlockHeight > lastValidBlockHeight;
 
   // ---- 1. Success, with proof. -------------------------------------------
-  if (phase === "settle" && ok && signature) {
+  if (phase === "settle" && ok && sig) {
     return {
       state: "confirmed",
       resignable: false,
       retryableLater: false,
-      reason: `settled: ${signature}`,
+      reason: `settled: ${sig}`,
     };
   }
 
@@ -85,7 +90,7 @@ export function classify(input: ClassifyInput): Classification {
   // A facilitator reporting success without a signature is misbehaving.
   // Treat it as broadcast-of-unknown-outcome rather than trusting it: the
   // expensive mistake is paying twice, not waiting.
-  if (phase === "settle" && ok && !signature) {
+  if (phase === "settle" && ok && !sig) {
     return {
       state: "pending",
       resignable: false,
@@ -101,12 +106,12 @@ export function classify(input: ClassifyInput): Classification {
   //
   // Deliberately placed above the expiry check: an expired-looking error
   // AFTER broadcast does not make re-signing safe.
-  if (signature) {
+  if (sig) {
     return {
       state: "pending",
       resignable: false,
       retryableLater: false,
-      reason: `broadcast ${signature}, outcome unknown${errorText ? `: ${errorText}` : ""}`,
+      reason: `broadcast ${sig}, outcome unknown${errorText ? `: ${errorText}` : ""}`,
     };
   }
 

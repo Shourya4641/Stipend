@@ -30,3 +30,14 @@ console.log(`agent ${agent.address} requesting ${url}`);
 const res = await pay(url);
 console.log(`status ${res.status}`);
 console.log(await res.text());
+
+// Does the facilitator's verdict reach the agent at all?
+for (const [k, v] of res.headers.entries()) {
+  if (!k.toLowerCase().startsWith("payment")) continue;
+  console.log(`\n--- ${k} ---`);
+  try {
+    console.log(JSON.stringify(JSON.parse(Buffer.from(v, "base64").toString("utf8")), null, 2));
+  } catch {
+    console.log(v);
+  }
+}

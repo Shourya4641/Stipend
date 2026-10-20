@@ -114,6 +114,17 @@ describe("classify — a signature exists", () => {
   });
 });
 
+test('empty-string signature is NOT a broadcast', () => {
+  // @x402/core requires SettleResponse.transaction, so a pre-broadcast
+  // refusal sends "". It must classify as rejected/expired, never pending.
+  const r = classify({
+    ...base, currentBlockHeight: PAST, phase: "settle", ok: false,
+    signature: "", errorText: "aborted by policy", refusalKind: "policy",
+  });
+  assert.equal(r.state, "expired");
+  assert.equal(r.resignable, true);
+});
+
 describe("invariants", () => {
   // The single rule the whole design rests on. Brute-forced over every
   // combination rather than argued: if a signature exists, re-signing is

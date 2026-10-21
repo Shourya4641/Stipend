@@ -2,18 +2,18 @@ import express from "express";
 import { x402Facilitator } from "@x402/core/facilitator";
 import { registerExactSvmScheme } from "@x402/svm/exact/facilitator";
 import { toFacilitatorSvmSigner, SOLANA_DEVNET_CAIP2 } from "@x402/svm";
-import { createSolanaRpc } from "@solana/kit";
 import { loadOrCreateSigner } from "./keys";
 import { classify } from "./classify";
+import { getBlockHeight } from "./chain";
 
 const PORT = Number(process.env.FACILITATOR_PORT ?? 3000);
-const RPC_URL = process.env.SOLANA_RPC_DEVNET ?? "https://api.devnet.solana.com";
+const RPC_URL =
+  process.env.SOLANA_RPC_DEVNET ?? "https://api.devnet.solana.com";
 
 // The ONLY wallet in Stipend that holds SOL. It never holds USDC and never
 // moves the agent's money — it occupies the fee-payer slot and signs for that
 // slot alone.
 const feePayerKeypair = await loadOrCreateSigner("fee-payer");
-const rpc = createSolanaRpc(RPC_URL);
 
 /** Placeholder spend cap. 0.01 USDC in atomic units. Postgres-backed later. */
 const MAX_ATOMIC_PER_PAYMENT = 10_000n;
@@ -26,7 +26,9 @@ let policyVeto: string | undefined;
 
 // Wraps a kit signer into the shape x402 needs: getAddresses() + signTransaction().
 //   @x402/svm 2.28.0 -> signer-gUqhJy7y.d.mts:50 (FacilitatorSvmSigner)
-const signer = toFacilitatorSvmSigner(feePayerKeypair, { defaultRpcUrl: RPC_URL });
+const signer = toFacilitatorSvmSigner(feePayerKeypair, {
+  defaultRpcUrl: RPC_URL,
+});
 
 //   @x402/core 2.28.0 -> facilitator/index.d.mts:51
 const facilitator = new x402Facilitator();
@@ -71,16 +73,58 @@ app.get("/supported", (_req, res) => {
   });
 });
 
+/**
+ * Expiry deadline from the 402, shared by /verify and /settle.
+ *
+ * A missing deadline makes expiry UNPROVABLE, so it returns a sentinel no
+ * block height can exceed. Defaulting to 0n would mark every payment expired
+ * and invite the agent to pay again with no evidence.
+ */
+function deadlineOf(paymentRequirements: any): bigint {
+  const d = paymentRequirements?.extra?.lastValidBlockHeight;
+  return d === undefined ? 2n ** 64n : BigInt(String(d));
+}
+
 app.post("/verify", async (req, res) => {
+  const { paymentPayload, paymentRequirements } = req.body ?? {};
   try {
-    const { paymentPayload, paymentRequirements } = req.body;
-    const result = await facilitator.verify(paymentPayload, paymentRequirements);
-    console.log(
-      `[verify] ${result.isValid ? "VALID" : "INVALID"} ${result.invalidReason ?? ""} ${result.invalidMessage ?? ""}`,
+    const result = await facilitator.verify(
+      paymentPayload,
+      paymentRequirements,
     );
-    res.json(result);
+
+    // Verify never broadcasts, so there is never a signature here. classify
+    // therefore decides on arithmetic alone: past the deadline -> expired and
+    // safe to re-sign; inside it -> rejected on the merits.
+    //
+    // KNOWN LIMIT: "AlreadyProcessed" lands in `rejected`, which is the SAFE
+    // answer (do not retry) but not the TRUE one (the money already moved).
+    // Telling those apart needs a ledger lookup keyed by request — the
+    // verify response carries no signature, and the only other route is
+    // string-matching the error, which is exactly what classify avoids.
+    const verdict = result.isValid
+      ? undefined
+      : classify({
+          phase: "verify",
+          ok: result.isValid,
+          signature: "",
+          errorText: result.invalidMessage ?? result.invalidReason,
+          lastValidBlockHeight: deadlineOf(paymentRequirements),
+          currentBlockHeight: await getBlockHeight(),
+          refusalKind: result.isValid ? undefined : "terms",
+        });
+
+    console.log(
+      `[verify] ${result.isValid ? "VALID" : `INVALID ${result.invalidReason ?? ""} ${result.invalidMessage ?? ""} -> ${verdict!.state}`}`,
+    );
+
+    res.json(
+      verdict
+        ? { ...result, extra: { ...result.extra, stipend: verdict } }
+        : result,
+    );
   } catch (err) {
-    console.error("[verify] threw:", err);
+    console.error("[verify] threw:", err instanceof Error ? err.message : err);
     res.status(400).json({ isValid: false, invalidReason: String(err) });
   }
 });
@@ -109,18 +153,24 @@ app.post("/settle", async (req, res) => {
       signature: args.signature,
       errorText: args.errorText,
       lastValidBlockHeight,
-      currentBlockHeight: await rpc.getBlockHeight().send(),
+      currentBlockHeight: await getBlockHeight(),
       refusalKind: policyVeto ? "policy" : args.signature ? undefined : "terms",
     });
     console.log(
       `[settle] ${verdict.state} resignable=${verdict.resignable} ` +
         `retryableLater=${verdict.retryableLater} — ${verdict.reason}`,
     );
-    res.json({ ...args.base, extra: { ...(args.base.extra ?? {}), stipend: verdict } });
+    res.json({
+      ...args.base,
+      extra: { ...(args.base.extra ?? {}), stipend: verdict },
+    });
   };
 
   try {
-    const result = await facilitator.settle(paymentPayload, paymentRequirements);
+    const result = await facilitator.settle(
+      paymentPayload,
+      paymentRequirements,
+    );
     // transaction is a REQUIRED string in @x402/core, so a refusal that never
     // broadcast arrives as "". classify normalises that to "no signature".
     await reply({

@@ -1,14 +1,13 @@
 import { x402Client, x402HTTPClient } from "@x402/core/client";
 import { registerExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
-import { createSolanaRpc } from "@solana/kit";
 import { loadOrCreateSigner } from "./keys";
+import { getBlockHeight, solLamports } from "./chain";
 
 const RPC_URL = process.env.SOLANA_RPC_DEVNET ?? "https://api.devnet.solana.com";
 const MERCHANT_URL = process.env.MERCHANT_URL ?? "http://127.0.0.1:4021";
 const URL = `${MERCHANT_URL}/safety-check?mint=So11111111111111111111111111111111111111112`;
 
-const rpc = createSolanaRpc(RPC_URL);
 const agent = await loadOrCreateSigner("agent");
 const client = new x402Client();
 registerExactSvmScheme(client, { signer: toClientSvmSigner(agent) });
@@ -28,8 +27,8 @@ const httpClient = new x402HTTPClient(client);
   if (r.status !== 200) process.exit(1);
 }
 
-const before = await rpc.getBalance(agent.address).send();
-console.log(`agent SOL before: ${before.value}`);
+const before = await solLamports(agent.address);
+console.log(`agent SOL before: ${before}`);
 
 // 1. Get the challenge.
 const challenge = await fetch(URL);
@@ -45,7 +44,7 @@ console.log("payment signed, holding it...");
 
 // 3. Wait until the chain is past the deadline.
 while (true) {
-  const height = await rpc.getBlockHeight().send();
+  const height = await getBlockHeight();
   if (height > deadline) {
     console.log(`chain at ${height} > ${deadline} — payment is now dead`);
     break;
@@ -61,8 +60,8 @@ const res = await fetch(URL, { headers: httpClient.encodePaymentSignatureHeader(
 console.log(`\nmerchant status: ${res.status}`);
 console.log(`body: ${(await res.text()).slice(0, 200)}`);
 
-const after = await rpc.getBalance(agent.address).send();
-console.log(`agent SOL after:  ${after.value}  (delta ${after.value - before.value})`);
+const after = await solLamports(agent.address);
+console.log(`agent SOL after:  ${after}  (delta ${after - before})`);
 console.log(
   res.status === 200
     ? "FAIL — resource released on an expired payment"

@@ -1,14 +1,10 @@
 import {
-  address,
-  createSolanaRpc,
-  createSolanaRpcSubscriptions,
   pipe,
   createTransactionMessage,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstruction,
   signTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
   getSignatureFromTransaction,
   assertIsTransactionWithBlockhashLifetime,
 } from "@solana/kit";
@@ -18,16 +14,7 @@ import {
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
 import { loadOrCreateSigner } from "./keys";
-
-const RPC_URL =
-  process.env.SOLANA_RPC_DEVNET ?? "https://api.devnet.solana.com";
-const WS_URL = RPC_URL.replace(/^http/, "ws");
-
-// Classic SPL Token, not Token-2022 — verified on-chain in Stage 1.
-const USDC_MINT = address("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
-
-const rpc = createSolanaRpc(RPC_URL);
-const rpcSubscriptions = createSolanaRpcSubscriptions(WS_URL);
+import { rpc, sendAndConfirm, USDC_MINT } from "./chain";
 
 const feePayer = await loadOrCreateSigner("fee-payer");
 const merchant = await loadOrCreateSigner("merchant");
@@ -53,8 +40,8 @@ const createIx = await getCreateAssociatedTokenIdempotentInstructionAsync({
 const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
 // Four things every Solana transaction needs, in order: a version, a fee
-// payer, a lifetime, and instructions. pipe() just threads the message
-// through each step — each returns a new message rather than mutating.
+// payer, a lifetime, and instructions. pipe() threads the message through
+// each step — each returns a new message rather than mutating.
 const message = pipe(
   createTransactionMessage({ version: 0 }),
   (m) => setTransactionMessageFeePayerSigner(feePayer, m),
@@ -62,16 +49,8 @@ const message = pipe(
   (m) => appendTransactionMessageInstruction(createIx, m),
 );
 
-// Collects a signature from every signer attached to the message.
-// Here that is just the fee payer.
 const signed = await signTransactionMessageWithSigners(message);
-
 assertIsTransactionWithBlockhashLifetime(signed);
 
-const sendAndConfirm = sendAndConfirmTransactionFactory({
-  rpc,
-  rpcSubscriptions,
-});
-await sendAndConfirm(signed, { commitment: "confirmed" });
-
+await sendAndConfirm()(signed, { commitment: "confirmed" });
 console.log(`confirmed: ${getSignatureFromTransaction(signed)}`);

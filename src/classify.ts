@@ -163,6 +163,37 @@ export function resolvePending(
     };
   }
   return onChain.errored
-    ? { state: "failed", resignable: false, retryableLater: false, reason: `${signature} landed and errored` }
-    : { state: "confirmed", resignable: false, retryableLater: false, reason: `${signature} landed` };
+    ? {
+        state: "failed",
+        resignable: false,
+        retryableLater: false,
+        reason: `${signature} landed and errored`,
+      }
+    : {
+        state: "confirmed",
+        resignable: false,
+        retryableLater: false,
+        reason: `${signature} landed`,
+      };
+}
+
+/**
+ * The outcome of a check that PASSED.
+ *
+ * Deliberately NOT a SettlementState. Nothing settled, nothing was refused,
+ * nothing expired — "cleared to proceed" is a different question from "what
+ * went wrong and is retrying safe", which is all `classify` answers.
+ */
+export type PassVerdict = {
+  state: "verified" | "settled";
+  signature?: string | undefined;
+};
+
+export function classifyPass(
+  phase: "verify" | "settle",
+  signature?: string,
+): PassVerdict {
+  return phase === "verify"
+    ? { state: "verified" }
+    : { state: "settled", signature };
 }

@@ -7,6 +7,7 @@ import {
   WireError,
   NO_DEADLINE,
   ALLOWED_NETWORKS,
+  attemptId,
 } from "./wire";
 
 const NETWORK = ALLOWED_NETWORKS[0]!;
@@ -122,5 +123,26 @@ describe("deadlineOf", () => {
 
   test("NO_DEADLINE is beyond any height the chain will reach", () => {
     assert.ok(NO_DEADLINE > 10n ** 15n);
+  });
+});
+
+describe("attemptId", () => {
+  const payload = (tx: string) => ({
+    x402Version: 2,
+    accepted: reqs(),
+    payload: { transaction: tx },
+  });
+
+  test("the same signed transaction gives the same id in both endpoints", () => {
+    // The whole point: /verify and /settle derive it independently.
+    assert.equal(attemptId(payload("AgAAfoo") as never), attemptId(payload("AgAAfoo") as never));
+  });
+
+  test("a different transaction gives a different id", () => {
+    assert.notEqual(attemptId(payload("AgAAfoo") as never), attemptId(payload("AgAAbar") as never));
+  });
+
+  test("falls back to the whole payload when transaction is absent", () => {
+    assert.match(attemptId({ x402Version: 2, accepted: reqs(), payload: {} } as never), /^[0-9a-f]{8}$/);
   });
 });

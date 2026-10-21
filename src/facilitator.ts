@@ -5,7 +5,7 @@ import { toFacilitatorSvmSigner, SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { loadOrCreateSigner } from "./keys";
 import { classify, classifyPass } from "./classify";
 import { getBlockHeight } from "./chain";
-import { parseFacilitatorRequest, deadlineOf, WireError } from "./wire";
+import { parseFacilitatorRequest, deadlineOf, WireError, attemptId } from "./wire";
 import { decide } from "./policy";
 import { CONSTANTS } from "./config/constants";
 
@@ -40,6 +40,8 @@ facilitator.onBeforeSettle(async ({ requirements }) => {
   const amount = BigInt(requirements.amount);
   const decision = decide(amount);
 
+  // No id here: the hook sees requirements, not the payload. Correlate by
+  // the [settle] line that follows it.
   console.log(`[policy] settle requested: ${amount} of ${requirements.asset}`);
   if (decision.allowed) return;
 
@@ -79,6 +81,7 @@ function wireFailure(res: express.Response, err: unknown): boolean {
 app.post("/verify", async (req, res) => {
   try {
     const { paymentPayload, paymentRequirements } = parseFacilitatorRequest(req.body);
+    const id = attemptId(paymentPayload);
     const result = await facilitator.verify(paymentPayload, paymentRequirements);
 
     // Verify never broadcasts, so there is never a signature here, and
@@ -102,8 +105,8 @@ app.post("/verify", async (req, res) => {
 
     console.log(
       result.isValid
-        ? "[verify] VALID"
-        : `[verify] INVALID ${result.invalidReason ?? ""} ${result.invalidMessage ?? ""} -> ${verdict.state}`,
+        ? `[verify ${id}] VALID`
+        : `[verify ${id}] INVALID ${result.invalidReason ?? ""} ${result.invalidMessage ?? ""} -> ${verdict.state}`,
     );
 
     res.json({ ...result, extra: { ...result.extra, stipend: verdict } });
@@ -128,6 +131,10 @@ app.post("/settle", async (req, res) => {
   }
   const { paymentPayload, paymentRequirements } = parsed;
 
+  // Derived from the signed transaction, so /verify computed the same id
+  // for this attempt without anything being passed between the two calls.
+  const id = attemptId(paymentPayload);
+
   // One source for the deadline, shared by the returned and thrown paths.
   const lastValidBlockHeight = deadlineOf(paymentRequirements);
 
@@ -147,7 +154,7 @@ app.post("/settle", async (req, res) => {
       refusalKind: policyVeto ? "policy" : args.signature ? undefined : "terms",
     });
     console.log(
-      `[settle] ${verdict.state} resignable=${verdict.resignable} ` +
+      `[settle ${id}] ${verdict.state} resignable=${verdict.resignable} ` +
         `retryableLater=${verdict.retryableLater} — ${verdict.reason}`,
     );
     res.json({

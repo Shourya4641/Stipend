@@ -13,6 +13,7 @@
  * No schema library: the shapes are small, and hand-written narrowing has no
  * dependency to pin, audit or upgrade.
  */
+import { createHash } from "node:crypto";
 import type { PaymentPayload, PaymentRequirements } from "@x402/core/types";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 
@@ -163,4 +164,26 @@ export function parseFacilitatorRequest(body: unknown): FacilitatorRequest {
     paymentPayload: parsePaymentPayload(b["paymentPayload"]),
     paymentRequirements: parsePaymentRequirements(b["paymentRequirements"]),
   };
+}
+
+/**
+ * A short, stable id for one payment ATTEMPT.
+ *
+ * Derived rather than supplied: both /verify and /settle receive the same
+ * signed transaction, so both compute the same id with no header to pass
+ * and nothing for the merchant to keep in sync. @x402/core's only header
+ * hook (createAuthHeaders) is keyed by request path, not by payment, so it
+ * cannot carry an id that spans the two calls.
+ *
+ * Scope is deliberately one attempt. A retry after expiry is a DIFFERENT
+ * transaction and gets a different id — correct, because it is a different
+ * attempt. Linking attempts at the same purchase needs a request-level key
+ * (resource + payer), which is the ledger's job, not this.
+ *
+ * Not security-relevant: it labels log lines. Truncated for readability.
+ */
+export function attemptId(payload: PaymentPayload): string {
+  const tx = payload.payload["transaction"];
+  const basis = typeof tx === "string" ? tx : JSON.stringify(payload.payload);
+  return createHash("sha256").update(basis).digest("hex").slice(0, 8);
 }

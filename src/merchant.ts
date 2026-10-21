@@ -3,7 +3,7 @@ import { paymentMiddleware } from "@x402/express";
 import { x402ResourceServer, HTTPFacilitatorClient } from "@x402/core/server";
 import { registerExactSvmScheme } from "@x402/svm/exact/server";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
-import { loadOrCreateSigner } from "./keys";
+import { loadOrCreateSigner } from "../shared/keys";
 
 const PORT = Number(process.env.MERCHANT_PORT ?? 4021);
 const RPC_URL =

@@ -16,7 +16,7 @@ import {
   sendAndConfirmTransactionFactory,
   type Address,
 } from "@solana/kit";
-import { CONSTANTS } from "./config/constants";
+import { CONSTANTS } from "./constants";
 
 export const USDC_MINT = address(CONSTANTS.USDC_MINT);
 

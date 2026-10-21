@@ -1,8 +1,8 @@
 import { x402Client, x402HTTPClient } from "@x402/core/client";
 import { registerExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
-import { loadOrCreateSigner } from "./keys";
-import { getBlockHeight, solLamports } from "./chain";
+import { loadOrCreateSigner } from "../shared/keys";
+import { getBlockHeight, solLamports } from "../shared/chain";
 
 const RPC_URL = process.env.SOLANA_RPC_DEVNET ?? "https://api.devnet.solana.com";
 const MERCHANT_URL = process.env.MERCHANT_URL ?? "http://127.0.0.1:4021";

@@ -13,8 +13,8 @@ import {
   getCreateAssociatedTokenIdempotentInstructionAsync,
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
-import { loadOrCreateSigner } from "./keys";
-import { rpc, sendAndConfirm, USDC_MINT } from "./chain";
+import { loadOrCreateSigner } from "../shared/keys";
+import { rpc, sendAndConfirm, USDC_MINT } from "../shared/chain";
 
 const feePayer = await loadOrCreateSigner("fee-payer");
 const merchant = await loadOrCreateSigner("merchant");

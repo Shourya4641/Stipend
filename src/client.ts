@@ -2,10 +2,10 @@ import { x402Client } from "@x402/core/client";
 import { wrapFetchWithPayment } from "@x402/fetch";
 import { registerExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
-import { loadOrCreateSigner } from "./keys";
-import { getBlockHeight } from "./chain";
-import { classify } from "./classify";
-import { CONSTANTS } from "./config/constants";
+import { loadOrCreateSigner } from "../shared/keys";
+import { getBlockHeight } from "../shared/chain";
+import { classify } from "../shared/classify";
+import { CONSTANTS } from "../shared/constants";
 
 const URL = `${CONSTANTS.MERCHANT_URL}/safety-check?mint=So11111111111111111111111111111111111111112`;
 

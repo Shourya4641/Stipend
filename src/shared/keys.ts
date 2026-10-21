@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
-import { CONSTANTS } from "./config/constants";
+import { CONSTANTS } from "./constants";
 
 /**
  * Load a signer from .keys/, creating it on first use.

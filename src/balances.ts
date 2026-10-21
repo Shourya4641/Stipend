@@ -1,5 +1,5 @@
-import { loadOrCreateSigner } from "./keys";
-import { solLamports, usdcBalance } from "./chain";
+import { loadOrCreateSigner } from "../shared/keys";
+import { solLamports, usdcBalance } from "../shared/chain";
 
 for (const name of ["agent", "fee-payer", "merchant"]) {
   const signer = await loadOrCreateSigner(name);

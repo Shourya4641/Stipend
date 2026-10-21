@@ -2,12 +2,12 @@ import express from "express";
 import { x402Facilitator } from "@x402/core/facilitator";
 import { registerExactSvmScheme } from "@x402/svm/exact/facilitator";
 import { toFacilitatorSvmSigner, SOLANA_DEVNET_CAIP2 } from "@x402/svm";
-import { loadOrCreateSigner } from "./keys";
-import { classify, classifyPass } from "./classify";
-import { getBlockHeight } from "./chain";
+import { loadOrCreateSigner } from "../shared/keys";
+import { classify, classifyPass } from "../shared/classify";
+import { getBlockHeight } from "../shared/chain";
 import { parseFacilitatorRequest, deadlineOf, WireError, attemptId } from "./wire";
 import { decide } from "./policy";
-import { CONSTANTS } from "./config/constants";
+import { CONSTANTS } from "../shared/constants";
 
 // The ONLY wallet in Stipend that holds SOL. It never holds USDC and never
 // moves the agent's money — it occupies the fee-payer slot and signs for

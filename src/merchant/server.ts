@@ -4,11 +4,7 @@ import { x402ResourceServer, HTTPFacilitatorClient } from "@x402/core/server";
 import { registerExactSvmScheme } from "@x402/svm/exact/server";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { loadOrCreateSigner } from "../shared/keys";
-
-const PORT = Number(process.env.MERCHANT_PORT ?? 4021);
-const RPC_URL =
-  process.env.SOLANA_RPC_DEVNET ?? "https://api.devnet.solana.com";
-const FACILITATOR_URL = process.env.FACILITATOR_URL ?? "http://127.0.0.1:3000";
+import { CONSTANTS } from "../shared/constants";
 
 // The merchant holds no SOL and no key material it needs to spend with.
 // It only needs its own address, to be paid into.
@@ -16,7 +12,7 @@ const merchant = await loadOrCreateSigner("merchant");
 
 //   @x402/core 2.28.0 -> x402Client-C7_OogbK.d.mts (HTTPFacilitatorClient)
 //   constructor(config?: FacilitatorConfig)
-const facilitatorClient = new HTTPFacilitatorClient({ url: FACILITATOR_URL });
+const facilitatorClient = new HTTPFacilitatorClient({ url: CONSTANTS.FACILITATOR_URL });
 
 //   @x402/core 2.28.0 -> x402ResourceServer
 //   constructor(facilitatorClients?: FacilitatorClient | FacilitatorClient[])
@@ -26,7 +22,7 @@ const server = new x402ResourceServer(facilitatorClient);
 //   rpcUrl set so the 402 carries extra.recentBlockhash (see :103-108)
 registerExactSvmScheme(server, {
   networks: [SOLANA_DEVNET_CAIP2],
-  rpcUrl: RPC_URL,
+  rpcUrl: CONSTANTS.RPC_URL,
 });
 
 const app = express();
@@ -77,6 +73,6 @@ app.get("/safety-check", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`merchant on :${PORT}, paid to ${merchant.address}`);
+app.listen(CONSTANTS.MERCHANT_PORT, () => {
+  console.log(`merchant on :${CONSTANTS.MERCHANT_PORT}, paid to ${merchant.address}`);
 });

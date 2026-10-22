@@ -64,3 +64,55 @@ exposure. Log the message hash and attempt id instead.
 
 **Out of scope for 2 Nov:** a `/metrics` endpoint. Note as a known gap in the
 README.
+
+---
+
+## D3 — Config: three kinds, validated once per role with zod
+
+"Constants" is three different things, with three different answers.
+
+**1. Chain facts** — `USDC_MINT`, `SOLANA_DEVNET_CAIP2`, token program id.
+Protocol truths, not configuration. **Shared**, frozen, and deliberately NOT
+env-overridable: `process.env.DEVNET_USDC_MINT` would invite pointing a
+devnet build at an arbitrary mint with nothing downstream noticing.
+→ `src/shared/chain-constants.ts`
+
+**2. Deployment config** — ports, service URLs, RPC endpoint, `DATABASE_URL`.
+Genuinely varies, must be validated. **Per-role.**
+→ `src/<role>/config.ts`
+
+**3. Secrets** — fee-payer key, DB password inside `DATABASE_URL`.
+**Per-role, and this is a security boundary, not tidiness.** A shared config
+object means the agent process can read the key that spends SOL.
+`boundaries.test.ts` already forbids `agent/` importing `facilitator/`; a
+shared config is the hole in that fence, because the secret arrives via
+`shared/`. Same invariant, applied to data instead of code.
+
+### Validation
+
+- **zod**, for env AND for `wire.ts` — see D6. Using zod for one and
+  hand-rolling the other is the inconsistency that makes a codebase feel
+  arbitrary. zod also gives field paths in errors for free, which is the
+  `path` threading currently hand-built in wire.ts.
+- Schemas must end in `satisfies` against the `@x402/core` types, so SDK
+  drift fails at compile time rather than at runtime.
+
+### Loading
+
+- Each role's `config.ts` exports **`loadConfig()`** — it does NOT parse at
+  import time. Importing the module must have no side effects, or every test
+  and tool that touches it needs a full env to exist.
+- The role's entrypoint calls `loadConfig()` once at startup and passes the
+  result down. Tests construct a config literal and never touch
+  `process.env`; this is also what makes supertest route tests practical.
+- On failure: report **every** missing/invalid variable at once and exit.
+  One-per-restart discovery is a waste of a session.
+
+### Defaults
+
+- Devnet RPC URL and localhost ports MAY default — the default is the safe case.
+- Secrets and `DATABASE_URL` have **NO default**. Absent means refuse to start.
+  A silent default here means connecting to the wrong database and finding out
+  via corrupt rows.
+- `.env.example` lists every variable, including the ones with no default, or
+  a fresh clone fails citing a variable nobody documented.

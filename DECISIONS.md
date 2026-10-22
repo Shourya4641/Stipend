@@ -643,9 +643,12 @@ a replay all arrive under the SAME `invalidReason`
 differs. Two numbers are a fact; a message is a format that changes in a
 release.
 
-The limit: on `AlreadyProcessed`, the chain is still inside the validity window,
-so the arithmetic says "not expired" and we answer `rejected` — not resignable,
-so the agent stops. **Safe** (the money moved; not retrying is right) but not
-**true** (the honest answer is "you already paid, here is your receipt"). D10's
-ledger keyed by `payment-identifier` is what upgrades the safe guess to the
-correct answer.
+The limit, plainly: on a replay the chain is still inside the validity window,
+so the two numbers say "not expired" and we answer `rejected` — don't retry.
+The agent then behaves correctly, because the money really did move and it
+really should not retry. But we got the right behaviour for the wrong reason.
+The honest answer was "you already paid, here is the receipt"; we said
+"refused". We cannot do better today because the facilitator keeps no record
+of anything, and the only hint is the word `AlreadyProcessed` inside an error
+sentence we have deliberately chosen not to parse. D10's ledger, keyed by
+`payment-identifier`, is what turns a safe guess into a true answer.

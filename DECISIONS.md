@@ -333,3 +333,82 @@ zod schemas infer zod's types, not `@x402/core`'s. If the SDK changes
 `PaymentRequirements`, a schema still compiles and starts silently dropping a
 field. Guard every schema with a `satisfies` assertion so drift fails at
 compile time. This is the one piece of ceremony worth keeping.
+
+---
+
+## D7 — `shared/classify.ts`
+
+### C1 — Types move out
+
+`SettlementState`, `Phase`, `RefusalKind`, `PassVerdict` → `src/shared/enums.ts`
+as `as const` objects (D1). `classify.ts` keeps functions only.
+
+### C2 — Enforce the verify invariant explicitly
+
+```ts
+if (phase === Phase.Verify && sig) {
+  throw new Error("invariant: verify never broadcasts, so it cannot carry a signature");
+}
+```
+
+Branches 1 and 2 require `phase === "settle"`; branch 3 requires a signature.
+So a verify outcome can only ever reach branch 4 (`expired`) or 5 (`rejected`)
+— `confirmed`, `pending` and `failed` are unreachable by construction. That is
+correct but *emergent*: nothing in the code states it. One line makes it
+enforced and documented. Throwing is right here — it is a programmer error
+(D4 class 4), not a payment outcome.
+
+### C3 — Keep `resolvePending`, wire it with the ledger
+
+It is currently called only by tests. Keeping it with a `@see` comment stating
+it is not yet wired; the tests document the intended semantics and rewriting
+them later is waste.
+
+### C4 — Unchanged
+
+- Empty-signature normalisation (`sig = signature?.trim() ? signature : undefined`)
+  stays **inside** `classify`, not at call sites. `SettleResponse.transaction`
+  is a REQUIRED string in `@x402/core`, so a refusal that never broadcast
+  arrives as `""`. If one caller forgot to normalise, `""` would be truthy at
+  the `if (sig)` check and a payment that never left the building would be
+  classified `pending` — permanently, since nothing on-chain can resolve it.
+- `resolvePending(signature, onChain: { landed, errored })` keeps the
+  caller-supplies-the-lookup shape. It stays pure and testable with no network
+  and no mocks. Rejected alternative `resolvePending(signature, rpc)` reads
+  better but needs a fake RPC in every test, and the caller already holds the
+  RPC and must handle its failure regardless.
+- The five branches, their order, and the 16 tests stay.
+
+### Answers recorded (review questions #41–#45)
+
+- **Empty signature comes from three callers**, all meaning "nothing
+  broadcast": verify (always — verification is simulation); a policy veto
+  (refused before reaching the chain); and the SDK's own refusal (because
+  `transaction` is a required string with no way to express absence).
+- **`onChain` is supplied by the caller**, deliberately — no RPC call inside
+  the function.
+
+---
+
+## D8 — `pending` is currently a state with no exit (defect)
+
+Nothing calls `resolvePending`, so a payment reaching `pending` stays there
+forever. In a demo that is a payment stuck with no explanation.
+
+The reconciler lands with the ledger and MUST:
+
+- call `getSignatureStatuses([sig], { searchTransactionHistory: true })`.
+  **The flag is mandatory.** Without it a node searches only a recent status
+  cache. Real production bug: `dfinity/cksol` PR #239 — their cache held
+  "roughly two minutes of history", so finalized transactions came back
+  unknown and "a withdrawal was resubmitted and a sweep was dropped, even
+  though the transaction had been finalized".
+- treat a `null` result as "this node does not know", **never** as "it failed".
+- declare "never landed" only when BOTH hold: finalized block height has
+  passed `lastValidBlockHeight`, AND a history search still returns null.
+  A single node's `null` inside the cache window proves nothing — the node may
+  be lagging or forked.
+- run both ways: on demand when a key is queried again, and from a background
+  sweep. Resolve rows within hours — measured RPC retention with the history
+  flag was between ~22 h and ~23 d on one public provider, so the long tail is
+  not dependable.

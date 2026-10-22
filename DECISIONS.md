@@ -412,3 +412,94 @@ The reconciler lands with the ledger and MUST:
   sweep. Resolve rows within hours — measured RPC retention with the history
   flag was between ~22 h and ~23 d on one public provider, so the long tail is
   not dependable.
+
+---
+
+## D9 — `attemptId` stays in `facilitator/wire.ts`
+
+It is facilitator-local because **only the facilitator computes it**, and it
+is *derived* rather than supplied because nobody can supply it.
+
+`@x402/core`'s only header hook is `createAuthHeaders`, and it is keyed by
+request **path** (`verify`, `settle`, `supported`), not by payment. It is
+called per HTTP request with no knowledge of which payment it serves, so a
+merchant using it would produce one id for `/verify` and a different one for
+`/settle` — exactly the link we wanted, and the one thing it cannot give.
+
+Both endpoints receive the same signed transaction bytes, so both hash them
+and arrive at the same id independently, with nothing transmitted. Keep the
+comment explaining this, so a future reader does not "fix" it by making it
+merchant-supplied.
+
+**Scope:** one transaction. A retry after expiry is a different transaction
+and gets a different id. That is correct, and it is also why D10 exists.
+
+---
+
+## D10 — Adopt the x402 `payment-identifier` extension — IN SCOPE for 2 Nov
+
+### Why
+
+The double-payment hole: agent pays → it settles → the response is lost →
+the blockhash expires → the agent builds a **new** transaction and pays again.
+Two payments, two signatures, two `attemptId`s, nothing linking them.
+`attemptId` cannot catch this by construction, and neither can
+`PendingSettlementStore` — its key is derived from the payload, so it changes
+when the agent re-signs.
+
+### The mechanism (x402 protocol, docs.x402.org/extensions/payment-identifier)
+
+- The **client** generates one id per *logical purchase*: `pay_<32 hex>`,
+  16–128 chars, `^[a-zA-Z0-9_-]+$`. It persists across retries, so it survives
+  a fresh 402 and a re-signed transaction.
+- Carried in `PaymentPayload.extensions["payment-identifier"]`.
+- The **server** advertises it in `PaymentRequired.extensions` with
+  `required: true`; missing → 400.
+- The server binds the id to a **fingerprint** of scheme, network, asset,
+  amount, payTo, resource path and method.
+  - same id + same fingerprint → replay the stored answer, skip payment
+  - same id + different fingerprint → **409 Conflict**
+- TTL ≥ 24 h.
+
+### Two ids, two jobs — do not conflate
+
+| | `attemptId` | `payment-identifier` |
+|---|---|---|
+| Identifies | one transaction | one logical purchase |
+| Origin | facilitator, derived | client, generated once |
+| Survives a re-sign | no | **yes** |
+| Used for | log correlation | **ledger idempotency** |
+
+### Rejected key candidates, with their failure modes
+
+- **resource URL** — blocks every legitimate second purchase within the TTL
+- **payer + resource** — same problem (an agent polling an endpoint twice)
+- **memo nonce** — changes per challenge, so it cannot span a re-sign
+- **transaction signature / message hash** — changes on re-sign, and is
+  *public* once broadcast. x402 PR #3021 removed a "settled nonce → report
+  success" path for exactly this: "a settled payload is public… that path
+  handed a scraped replay a second resource release"
+
+### Split of responsibility
+
+- **Agent:** generate once per purchase, reuse across retries.
+- **Merchant:** advertise `required: true`; replay the stored *resource
+  response* on a matching id. Only the merchant can do this — the facilitator
+  never sees the body being paid for.
+- **Facilitator:** enforce one settlement per (scope, payer, payment_id) +
+  fingerprint, in the ledger.
+
+Keep a separate uniqueness constraint on the transaction message hash, so the
+same signed bytes can never settle twice.
+
+### Cost, recorded honestly
+
+Touches all three roles and needs the ledger underneath it. 2 Nov now carries:
+D1–D8 refactor + ledger + reconciler + payment-identifier. **If time runs
+short, drop in this order:** (1) the reconciler's background sweep, keeping
+on-demand resolution; (2) merchant-side response replay, keeping
+facilitator-side settlement dedup.
+
+Note: Coinbase's x402 FAQ says the extension works with the CDP facilitator
+but the CDP SDK does not enable it by default — it is negotiated between
+client and server. Stipend controls both, so it can require it.

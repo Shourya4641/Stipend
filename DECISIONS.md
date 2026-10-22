@@ -798,5 +798,16 @@ Also in this file:
 - **`wsUrl` becomes its own config value.** Deriving it by replacing `http`
   with `ws` works on devnet and silently breaks for any provider whose
   websocket is on a different host.
-- **`"confirmed"` is the right commitment** for releasing a resource.
-  `finalized` costs ~13 s more and buys certainty we do not need.
+- **No change to commitment levels** — recorded as justification, not a task.
+  `provision.ts` correctly uses `"confirmed"`: a supermajority has voted, it
+  is irreversible in practice, and it takes a second or two. `"finalized"`
+  (31+ blocks on top, ~13 s) buys certainty that creating a token account does
+  not need.
+
+  Where the distinction DOES matter, in the D8 reconciler:
+  - "release the resource?" → `confirmed`
+  - "close the ledger row permanently?" → `finalized`
+  - "declare the payment never landed?" → **block height at `finalized`
+    commitment**. A lagging or forked node reporting `confirmed` height could
+    say the deadline has passed when it has not, marking a live payment
+    expired and inviting a second payment.

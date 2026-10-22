@@ -116,3 +116,99 @@ shared config is the hole in that fence, because the secret arrives via
   via corrupt rows.
 - `.env.example` lists every variable, including the ones with no default, or
   a fresh clone fails citing a variable nobody documented.
+
+---
+
+## D4 — Errors: answers are returns, accidents are exceptions
+
+**The rule:** some things that go wrong are *answers* ("your spend cap was
+exceeded" — the system worked, we decided no, and that decision carries
+structure the agent needs). Some are *accidents* ("Postgres is down" — there
+is no answer, only a failure).
+
+**An answer must never travel as an exception.** `catch` receives an `Error`
+with a string in it; every structured field is gone. `retryableLater: true`
+disappears precisely when it matters.
+
+### Four classes
+
+| Class | Example | Status | Verdict? | Where |
+|---|---|---|---|---|
+| Protocol error | body is not a valid request | 400 | No — never a payment | Global handler |
+| Payment outcome | verify failed, policy veto, settle failed | 402 / 200 | **Always** | In-route, as a `return` |
+| Infrastructure | RPC down, Postgres unreachable | 502 | No | Global handler |
+| Programmer error | `undefined is not a function` | 500 | No, message never leaked | Global handler |
+
+Today's `/settle` catch does classes 2 and 4 at once: a policy abort and a
+genuine bug land in the same branch, and a crash is reported to the agent as
+`rejected (policy)` if `policyVeto` happens to be set from an earlier request.
+
+### Move the policy check into the route
+
+`onBeforeSettle` returning `{ abort }` THROWS out of `facilitator.settle()`
+(x402Facilitator.ts:418). Stop using that throw as the signal — `decide()`
+already told us, in the hook, and we discard it only to infer it back from an
+exception.
+
+```ts
+const decision = decide(BigInt(body.paymentRequirements.amount), config.policy);
+if (!decision.allowed) {
+  return reply(res, log, { ok: false, signature: "", refusalKind: "policy",
+                           errorText: decision.reason });
+}
+const result = await facilitator.settle(body.paymentPayload, body.paymentRequirements);
+```
+
+Consequences:
+- **`policyVeto` is deleted**, not fixed. The module-level variable and its
+  concurrent-settle race go away, because the decision is made and used three
+  lines apart.
+- The hook stays registered as **defence in depth** — it still fires if the
+  SDK is driven from elsewhere — but nothing depends on catching it.
+- Accepted cost: the decision now exists in two places (route and hook) and
+  they must agree. Both call the same `decide()`, so divergence means someone
+  edited one call site; a test asserts they return the same answer.
+- Anything `settle()` still throws is class 3 or 4, so the catch block goes
+  away entirely. **Express 5 forwards rejected promises from async handlers to
+  the error middleware automatically** (Express 4 did not — that is why
+  tutorials wrap every handler).
+
+### Global error handler
+
+Registered last. Express requires **exactly four** parameters or it treats the
+function as ordinary middleware and never calls it.
+
+```ts
+WireError      → 400  { error: "malformed_request", message }   // we wrote it; safe to echo
+UpstreamError  → 502  { error: "upstream_unavailable" }
+anything else  → 500  { error: "internal" }                      // logged, never sent
+```
+
+A 500's message may contain a connection string or a file path. Never echo it.
+
+### Body validation at the route
+
+NOT `app.post(path, validate(schema), handler)` — stashing on `req.validated`
+cannot be typed without augmenting Express's `Request` globally, which forces
+a cast and breaks D6.
+
+A wrapper passes the parsed body as a typed third argument:
+
+```ts
+function withBody<T>(schema: z.ZodType<T>, handler: (req, res, body: T) => Promise<void>) {
+  return async (req, res, next) => {
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return next(new WireError(formatZodError(parsed.error)));
+    return handler(req, res, parsed.data);
+  };
+}
+```
+
+Fully typed body inside the handler, no validation code in the route, no casts.
+
+### Process level
+
+`unhandledRejection` and `uncaughtException` **log and exit**. A facilitator in
+an unknown state is worse than a dead one; once the ledger exists, the intent
+row survives the crash and a reconciler finishes the job. Staying alive is how
+you get a second broadcast.

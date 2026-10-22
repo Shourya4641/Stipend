@@ -503,3 +503,62 @@ facilitator-side settlement dedup.
 Note: Coinbase's x402 FAQ says the extension works with the CDP facilitator
 but the CDP SDK does not enable it by default — it is negotiated between
 client and server. Stipend controls both, so it can require it.
+
+---
+
+## D11 — `facilitator/policy.ts`
+
+### Keep: `config` as a parameter
+
+Not a module constant. This is what makes the policy testable at different
+caps without touching globals, and it is where the Postgres-backed per-agent
+limits will plug in. A config object with one field looks silly today and is
+the right shape for what is coming.
+
+### Remove: the default parameter value
+
+```ts
+// before
+decide(amount: bigint, config: PolicyConfig = DEFAULT_POLICY)
+// after
+decide(amount: AtomicAmount, config: PolicyConfig)
+```
+
+A caller who forgets to pass config currently gets a 0.01 USDC cap silently —
+a spend limit chosen by a default parameter. D3 rejected exactly this for
+`DATABASE_URL`: the quiet path must not be the dangerous one.
+
+It also hides a wiring bug. After D3/D5, config flows from `loadConfig()`
+through `createApp(deps)`. Forget to thread it and there is no error — the
+facilitator enforces a cap nobody configured, discovered when a legitimate
+payment is refused citing an unfamiliar number.
+
+`DEFAULT_POLICY` survives as the value `loadConfig()` falls back to when the
+env var is absent. One explicit place instead of every call site.
+
+### Add: a branded type for atomic amounts
+
+`10_000n` is 0.01 USDC **only because USDC has 6 decimals**. Nothing in
+`policy.ts` knows that and nothing checks it. Set the cap thinking in dollars
+and the limit is a million times too large, with no error anywhere.
+
+```ts
+declare const AtomicBrand: unique symbol;
+export type AtomicAmount = bigint & { readonly [AtomicBrand]: true };
+
+/** The ONLY way to produce an AtomicAmount. Decimals must be stated. */
+export function toAtomic(value: bigint, decimals: number): AtomicAmount;
+```
+
+A raw `bigint` can no longer be passed where atomic units are expected. The
+mistake becomes a compile error instead of a production surprise — invisible
+in review, obvious at runtime, which is the worst combination.
+
+Applies wherever an amount crosses a boundary: `wire.ts` output, the policy
+cap from config, the ledger column.
+
+### Unchanged
+
+`decide` stays a pure function over a parsed amount — no network, no request
+object. Five tests, no mocks, including the cap-boundary case where an
+off-by-one would silently turn the cap into cap-minus-one.

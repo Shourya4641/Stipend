@@ -212,3 +212,61 @@ Fully typed body inside the handler, no validation code in the route, no casts.
 an unknown state is worse than a dead one; once the ledger exists, the intent
 row survives the crash and a reconciler finishes the job. Staying alive is how
 you get a second broadcast.
+
+---
+
+## D5 — Structure: split on lifecycle, not on line count
+
+### Evidence
+
+No real x402 facilitator examined uses controllers/services/repositories.
+They split along a different axis — **by payment scheme and network**:
+
+- `Emmo00/x402go-facilitator` (Hydra): `src/schemes/exact/evm/…`
+- `daydreamsai/facilitator`: routes feed a "Payment Scheme Registry"
+  (Exact EVM, Upto EVM, Exact SVM)
+- `rawgroundbeef/OpenFacilitator`: core package + SDK package
+
+The projects that DID grow modules grew them when a concern acquired its own
+**lifecycle or dependency**, not when a file got long:
+
+- BofAI added persistence → storage layer + `/payments` query endpoints
+- OpenFacilitator added multi-tenancy → core/SDK split, SQLite schema
+- SBC added idempotent settle → machinery to remember prior settlements
+
+Caveat: no line count for any of these main files could be verified.
+
+### Rule
+
+**Split when a concern gains its own lifecycle or dependency. Never at a line
+count.** This is defensible on camera; "we used a standard structure" is not.
+
+### Target
+
+facilitator/
+app.ts createApp(deps) — wiring, returns the app, never listens
+server.ts entrypoint: loadConfig(), build deps, app.listen()
+routes.ts the three routes
+policy.ts (exists)
+wire.ts (exists)
+ledger.ts all SQL ← arrives with the ledger
+reconciler.ts own loop and timer ← arrives with the ledger
+
+
+`createApp(deps)` is the load-bearing change, and it is **a seam, not a
+layer**. Today `server.ts` constructs its signer, RPC and facilitator at
+module scope and calls `listen()` on import, which is why not one route test
+exists. A factory taking dependencies as an argument is what makes supertest
+possible — the worst gap in the project (59 unit tests, zero covering the code
+that moves money).
+
+`agent/` and `merchant/` get the same `createApp` treatment and nothing else.
+The merchant has one route returning a stub; splitting it further produces
+files containing one function each. The agent is a script with no routes at
+all — there is nothing to control, so no controller.
+
+### Rejected
+
+Four-layer routes/controllers/services/repositories. No comparable project
+does it, and for a service with three routes it produces mostly-empty files
+plus an import graph to navigate them.

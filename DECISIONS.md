@@ -270,3 +270,66 @@ all — there is nothing to control, so no controller.
 Four-layer routes/controllers/services/repositories. No comparable project
 does it, and for a service with three routes it produces mostly-empty files
 plus an import graph to navigate them.
+
+---
+
+## D6 — `unknown` at the boundary only; zod replaces hand-written narrowing
+
+### The contradiction in the review, resolved
+
+Comment #32 says "no `unknown` or `any` without justification". Comment #33
+says `wire.ts` is over-engineered. But `wire.ts` is *entirely* the machinery
+for eliminating `unknown` — that is its only job. Express hands over
+`req.body: any`; something must turn it into a typed value. Delete the
+narrowing and you are back to casting.
+
+So "over-engineered" cannot mean "checks too much". It means **hand-written
+where a declaration would do**:
+
+```ts
+// 190 lines of this
+function atomicAmount(v: unknown, field: string): string {
+  const s = str(v, field);
+  if (!/^\d+$/.test(s)) throw new WireError(`${field} must be a decimal integer string…`);
+  return s;
+}
+
+// vs. one line, per D3
+amount: z.string().regex(/^\d+$/, "must be a decimal integer string")
+```
+
+D3 already chose zod, so D3 resolves #33. `wire.ts` goes from ~190 lines to
+~60 with **no check weakened**.
+
+### Cut as genuinely over-built (independent of zod)
+
+- **The `path` parameter threaded through every function.** zod emits field
+  paths for free.
+- **Recursively parsing `accepted`** inside the payload. The facilitator acts
+  on `paymentRequirements`, never on `accepted` — defensive work with no
+  consumer.
+- **`ALLOWED_NETWORKS` as an array with `find`** for a single network. It
+  existed only to dodge a cast; `z.literal()` does the same.
+- **`attemptId`'s fallback branch** for a missing transaction. A payload
+  without one already fails parsing, so the branch is unreachable.
+
+### Where `unknown` is correct
+
+Exactly one place per input: the signature that *receives* untrusted data.
+`safeParse(req.body)` takes `unknown` because that is the honest type of bytes
+off a socket, and it forces narrowing. `unknown` anywhere past the boundary is
+a smell — it means someone deferred the question.
+
+### Must not be lost
+
+**`amount` validation stays strict.** The regex looks fussy; it is what stops
+`BigInt()` throwing inside `decide()` and the classifier then reporting a
+refused payment for what was actually a malformed request. Eight tests cover
+it and they carry over to zod unchanged.
+
+### Accepted cost
+
+zod schemas infer zod's types, not `@x402/core`'s. If the SDK changes
+`PaymentRequirements`, a schema still compiles and starts silently dropping a
+field. Guard every schema with a `satisfies` assertion so drift fails at
+compile time. This is the one piece of ceremony worth keeping.

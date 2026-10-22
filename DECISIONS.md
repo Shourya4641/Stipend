@@ -733,3 +733,70 @@ Test harness. Moves to `harness/`, not shipped in the client.
 - **#14** Two phases, `verify` and `settle`. The inference is whether a
   signature can exist: verify never has one, so expiry is arithmetic; settle
   can, and a signature overrides every other signal.
+
+---
+
+## D14 — `merchant/server.ts`
+
+1. **`createApp(deps)`** per D5, and nothing more. One route returning a stub
+   does not justify further splitting.
+2. **`price` and `maxTimeoutSeconds` move to merchant config.** `price` is a
+   *business decision* sitting in a server file — it changed twice during
+   testing, each time an edit-and-restart. The rest of the static values
+   (`scheme: "exact"`, `mimeType`, `description`, `payTo` from the signer)
+   stay literal: they are facts about what this merchant is, not knobs.
+   `maxTimeoutSeconds: 60` becomes a named constant carrying its reasoning —
+   it is coupled to Solana's ~60 s blockhash window, and a lower value means
+   abandoning payments that could still land.
+3. **`/safety-check` gets its real implementation**, scheduled **after** the
+   ledger and **before** the demo video. Scope frozen now so it cannot grow:
+   mint authority, freeze authority, Token-2022 permanent delegate and
+   default-frozen state, holder concentration, metadata mutability —
+   classified against published rules, **no opaque score**. Two Stage 1 probes
+   already do the hard parts (mint-account byte parsing,
+   `getTokenLargestAccounts`).
+
+   Rationale for the ordering: the paid resource is the least novel part of
+   the project, but it is what makes the demo legible. "An agent pays for a
+   token safety report" is a sentence anyone understands; "an agent pays for a
+   stub" is not. It still comes after the ledger, because the ledger is what
+   can still go wrong.
+
+---
+
+## D15 — `shared/chain.ts` becomes a factory (answers #48)
+
+`sendAndConfirm()(signed, …)` has two call sites because `sendAndConfirm` is a
+function returning a function: the first `()` builds the sender (opening a
+websocket on first use), the second sends.
+
+**Why it was lazy:** confirming a transaction means watching for it, and kit
+does that over a **websocket** (`createSolanaRpcSubscriptions`), not HTTP.
+Building it at module load would open a socket in `balances.ts`,
+`client.ts`, the facilitator and every test — when only `provision.ts` ever
+sends anything.
+
+**Why that shape is still wrong:** the laziness works around `chain.ts` doing
+work at import time, which D3 and D5 removed everywhere else. It is now the
+last module that constructs things when you merely look at it.
+
+```ts
+export function createChain(config: ChainConfig) {
+  const rpc = createSolanaRpc(config.rpcUrl);
+  const rpcSubscriptions = createSolanaRpcSubscriptions(config.wsUrl);
+  return { rpc,
+           getBlockHeight: () => rpc.getBlockHeight().send(),
+           sendAndConfirm: sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions }) };
+}
+```
+
+One call at the use site. No module-level cache, no `let`, no hidden
+first-use side effect. Tests pass a fake chain object instead of stubbing a
+module.
+
+Also in this file:
+- **`wsUrl` becomes its own config value.** Deriving it by replacing `http`
+  with `ws` works on devnet and silently breaks for any provider whose
+  websocket is on a different host.
+- **`"confirmed"` is the right commitment** for releasing a resource.
+  `finalized` costs ~13 s more and buys certainty we do not need.

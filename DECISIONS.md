@@ -652,3 +652,84 @@ The honest answer was "you already paid, here is the receipt"; we said
 of anything, and the only hint is the word `AlreadyProcessed` inside an error
 sentence we have deliberately chosen not to parse. D10's ledger, keyed by
 `payment-identifier`, is what turns a safe guess into a true answer.
+
+---
+
+## D13 — `agent/client.ts`
+
+### 1. Explicit retry cap (#11) — defect
+
+Today the client retries once because the code is written as a single `if`,
+not because anything limits it. No counter, no cap, no backoff. For a project
+whose pitch is spend-limited wallets, an unbounded retry path is the wrong
+default even while the current code happens to be bounded.
+
+`maxRetries` comes from config, defaults to **1**, and the count is checked
+rather than implied.
+
+### 2. The diagnosis must survive a dead RPC (#16) — defect
+
+`await getBlockHeight()` inside the diagnosis has no failure path. If the RPC
+is slow or down, the client crashes **after a payment attempt whose outcome is
+unknown** — the worst possible moment.
+
+Wrap it. If the height lookup fails, **do not retry.** Unknown must never mean
+resignable; that is the same rule the classifier already enforces for a
+signature.
+
+### 3. `"attempt 1"` becomes the loop counter (#10)
+
+Hardcoded only because it was written as a label. With item 1 it becomes the
+counter, so the label cannot disagree with reality.
+
+### 4. Key handling for a live deployment (#2)
+
+"Live on devnet" is the dangerous phrase: once anyone else runs the agent,
+devnet does not protect you. The facilitator's fee payer spends real SOL you
+topped up, and the agent's seed holds real test USDC. Free money is still
+money someone can drain.
+
+- **Agent key — not ours to manage.** Stipend's premise is that an *operator*
+  funds a wallet and sets a limit. Their key, their machine. The library
+  **accepts** a `TransactionSigner`; it never creates one. So
+  `loadOrCreateSigner` is not hardened — it moves to `tools/` as demo
+  scaffolding and leaves `shared/`. This also closes a real asymmetry: a
+  loader that can silently mint new wallets is currently importable by the
+  facilitator.
+- **Facilitator fee payer — the key that matters.** The only key that spends
+  SOL unprompted. For 2 Nov: injected env secret, **no default, no
+  file-creation path**, refuse to boot if absent. Documented as "KMS/HSM
+  before mainnet". `FacilitatorSvmSigner` only requires `getAddresses()` and
+  `signTransaction()`, so a remote signer drops in later without an interface
+  change — nothing demands we hold the bytes.
+- **Merchant holds no spending key**, only a receiving address. State this; it
+  is a property of the design, not an omission.
+- **Blast radius:** keep the fee payer topped up on a schedule rather than
+  parking a large balance in a hot key.
+
+### 5. `STALL_MS` leaves the agent (#7)
+
+Test harness. Moves to `harness/`, not shipped in the client.
+
+### Answers recorded
+
+- **#3** `registerExactSvmScheme` registers scheme AND network: the `exact`
+  scheme for `solana:…`. Offered anything else, the client has no scheme and
+  declines.
+- **#4** `toClientSvmSigner` adapts a `@solana/kit` signer to the interface
+  `@x402/svm` expects. An adapter at a library boundary, not ceremony.
+- **#5** `registerPolicy` receives the protocol version (2) and the decoded
+  `accepts` array; we ignore both and return the array unchanged. It is an
+  observation point, not a filter.
+- **#6, #9** The hook fires during selection — after the 402 arrives, before
+  signing — so `requirements[0].extra.lastValidBlockHeight` at that moment is
+  the deadline of the challenge actually being signed against. It is the first
+  of the two numbers the diagnosis compares.
+- **#8** `decode` returns `unknown` because it parses arbitrary base64 JSON off
+  the wire. Gets a zod schema and a real return type under D6.
+- **#12** A payment can fail at five points: policy refuses before signing; the
+  402 cannot be satisfied; verify fails; settle fails before broadcast; settle
+  fails after broadcast. **Only the last is `pending`.**
+- **#14** Two phases, `verify` and `settle`. The inference is whether a
+  signature can exist: verify never has one, so expiry is arithmetic; settle
+  can, and a signature overrides every other signal.

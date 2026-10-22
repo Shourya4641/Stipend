@@ -562,3 +562,90 @@ cap from config, the ledger column.
 `decide` stays a pure function over a parsed amount — no network, no request
 object. Five tests, no mocks, including the cap-boundary case where an
 off-by-one would silently turn the cap into cap-minus-one.
+
+---
+
+## D12 — `facilitator/server.ts`
+
+### 1. Document the signer asymmetry (answers #19)
+
+The agent and facilitator build signers differently **on purpose** — they sign
+different parts of the same transaction.
+
+- `toClientSvmSigner(agent)` takes **no RPC**. The agent signs its own slot and
+  hands the bytes away: never broadcasts, never reads the chain. That is what
+  lets a wallet with zero SOL participate at all.
+- `toFacilitatorSvmSigner(feePayer, { defaultRpcUrl })` needs an RPC because it
+  fills the fee-payer slot *and* must send and observe. Required:
+  `getAddresses()`, `signTransaction()`. Optional:
+  `simulateTransactionWithInnerInstructions`,
+  `getConfirmedTransactionInnerInstructions`, `getTokenAccountBalance`,
+  `fetchAddressLookupTables` — exactly what smart-wallet verification needs.
+
+The asymmetry encodes the trust boundary: one side can only sign, the other can
+sign and observe. Add a comment; a reader will otherwise read it as sloppiness.
+
+### 2. Cumulative spend per window — THE FEATURE, not a nice-to-have
+
+`decide()` currently checks a per-payment cap only. **A per-payment cap is not
+a spend limit.** An agent capped at 0.01 USDC per payment can spend unlimited
+money by paying a thousand times. For a project whose pitch is spend-limited
+agent wallets, this is the thinnest part of the build.
+
+Required: cumulative spend per payer per window, backed by the ledger (you
+cannot total spend without a record of spend). Lands with the ledger work.
+Also belongs in `decide()` eventually: per-payer limits, a blocklist, and
+"has this payment-identifier already settled" once D10 exists.
+
+### 3. Inline `reply()` after D4
+
+It exists only because the returned and thrown paths needed the identical
+classify → log → respond sequence. D4 removes the thrown path, leaving one
+caller. Scaffolding that stops being needed once the error design is fixed.
+
+### 4. Hooks: observation only, and exactly two more (answers #20, #21, hooks Q)
+
+Clarifying a misreading: `onBeforeSettle` does **not** check that the payload is
+correct — correctness was already established at verify. It is where *our* rules
+go. "Valid but we decline" is the only thing that belongs there, which is why
+`refusalKind` distinguishes `terms` (the payment was wrong) from `policy` (it
+was fine and we said no).
+
+More hooks would make this *less* abstracted, not more. A hook inverts control:
+you cannot return a value to your own route from inside one, request-scoped
+logging is awkward to thread, and `onBeforeSettle`'s only way to refuse is to
+**throw** — which is precisely how a policy decision came to be disguised as an
+exception (see D4).
+
+Add exactly two, both **write-only**, because they do the one thing a route
+cannot — observe a settle the route never sees the end of:
+
+- **`onAfterSettle`** → flip the ledger row to `pending` with the signature.
+  Fires inside the SDK's flow, so it catches settles the route did not initiate.
+- **`onSettleFailure`** → record "we may have broadcast" before anything
+  propagates.
+
+The three verify-side hooks buy nothing: verify is synchronous and returns to
+the route already.
+
+**Rule: decisions in the route, observation in hooks.**
+
+### 5. Answer recorded — the KNOWN LIMIT comment (#27)
+
+At verify there is never a signature, so `classify` cannot use its primary
+signal and falls back to arithmetic: chain height vs. the 402's
+`lastValidBlockHeight`. Past it → nothing was broadcast, `expired`, safe to
+re-sign. Inside it → refused on the merits, `rejected`.
+
+Arithmetic rather than error text because expiry, a malformed transaction and
+a replay all arrive under the SAME `invalidReason`
+(`invalid_exact_svm_transaction_simulation_failed`); only the free-text message
+differs. Two numbers are a fact; a message is a format that changes in a
+release.
+
+The limit: on `AlreadyProcessed`, the chain is still inside the validity window,
+so the arithmetic says "not expired" and we answer `rejected` — not resignable,
+so the agent stops. **Safe** (the money moved; not retrying is right) but not
+**true** (the honest answer is "you already paid, here is your receipt"). D10's
+ledger keyed by `payment-identifier` is what upgrades the safe guess to the
+correct answer.

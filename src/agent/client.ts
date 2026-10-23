@@ -2,39 +2,49 @@ import { x402Client } from "@x402/core/client";
 import { wrapFetchWithPayment } from "@x402/fetch";
 import { registerExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
-import { loadOrCreateSigner } from "../shared/keys";
+import { loadAgentSigner } from "./signer";
 import { createChain } from "../shared/chain";
 import { classify } from "../shared/classify";
+import { Phase, SettlementState } from "../shared/enums";
 import { loadConfig } from "./config";
 
 // Parsed once, here at the entrypoint — never at import time (D3).
 const config = loadConfig();
 const chain = createChain(config.chain);
 
-//! Suggestion - make the address So111.. as a constant and then call it here rather than hard coding it.
-const URL = `${config.merchantUrl}/safety-check?mint=So11111111111111111111111111111111111111112`;
+/** wSOL, used only as a sample mint for the demo request. */
+const SAMPLE_MINT = "So11111111111111111111111111111111111111112";
+const URL = `${config.merchantUrl}/safety-check?mint=${SAMPLE_MINT}`;
 
-// Holds USDC and zero SOL. It cannot broadcast anything by itself
-const agent = await loadOrCreateSigner("agent"); //! Understanding question - When this goes live, how is this signer creation supposed to work?
+// Holds USDC and zero SOL — it cannot broadcast anything by itself.
+//
+// LIVE DEPLOYMENT (D13): loadOrCreateSigner is demo scaffolding and lives in
+// tools/ for that reason. An operator funds their own wallet and sets their
+// own limit; the library must ACCEPT a signer, never create one. A missing
+// key in production is a hard failure, not a silently generated new wallet.
+const agent = await loadAgentSigner();
 
 const client = new x402Client();
-//! Understanding question - using registerExactSvmScheme() so we are saying look our x402 client is eligiable to make some payments via SVM i.e. Solana? correct me if I am wrong
-registerExactSvmScheme(client, { signer: toClientSvmSigner(agent) }); //! General question -  why do we need this toClientSvmSigner() at all? Like otherwise what would happen if we don't use it?
+
+// Registers scheme AND network: the `exact` scheme for solana:…. Offered
+// anything else, the client has no scheme and declines.
+// toClientSvmSigner adapts a @solana/kit signer to the interface @x402/svm
+// expects — an adapter at a library boundary. Note it takes no RPC, unlike
+// the facilitator's: the agent only signs its own slot and hands the bytes
+// away. That asymmetry is what lets a wallet with zero SOL participate.
+registerExactSvmScheme(client, { signer: toClientSvmSigner(agent) });
 
 /**
- * Remember the deadline of the challenge we actually signed against.
+ * Record the deadline of the challenge we actually signed against.
  *
- * Needed because a failed payment gets a FRESH 402 back, with a new
- * blockhash and a new lastValidBlockHeight. Diagnosing expiry from the
- * response would compare against a deadline we never used, and nothing
- * would ever look expired.
+ * A failed payment gets a FRESH 402 with a new blockhash, so diagnosing
+ * expiry from the response would compare against a deadline we never used
+ * and nothing would ever look expired. The hook fires during selection —
+ * after the 402 arrives, before signing — so this is the right moment.
  *
- * registerPolicy is a selection filter; here it is a pass-through that
- * records as a side effect.
+ * A pass-through filter used as an observation point.
  *   @x402/core 2.28.0 -> x402Client-C7_OogbK.d.mts:2029 / PaymentPolicy :1881
  */
-//! Understanding question - when the registerPolicy() runs for the first time, what values are we passing for _version and requirements?
-//! Understanding question - how are we relating the dealine with the challenge that we signed against?
 let observedDeadline: bigint | undefined;
 client.registerPolicy((_version, requirements) => {
   const deadline = requirements[0]?.extra?.["lastValidBlockHeight"];
@@ -42,29 +52,9 @@ client.registerPolicy((_version, requirements) => {
   return requirements;
 });
 
-// STALL_MS stalls the agent between receiving the 402 and signing against
-// it, so the blockhash dies in the gap. This is the real failure — a slow
-// agent, a slow network — not a fabricated input.
-//! Understanding question - Do we need this in production or when we go live?
-const STALL_MS = Number(process.env.STALL_MS ?? 0);
-if (STALL_MS > 0) {
-  let stalled = false;
-  client.registerPolicy((_v, requirements) => {
-    // ONE-SHOT: the retry must get a fair run, or it expires identically
-    // and we learn nothing about recovery.
-    if (stalled) return requirements;
-    stalled = true;
-    const until = Date.now() + STALL_MS;
-    console.log(`[stall] holding ${STALL_MS}ms before signing...`);
-    while (Date.now() < until) { /* block; policies are sync */ }
-    return requirements;
-  });
-}
-
 const pay = wrapFetchWithPayment(fetch, client);
 
-//! Understanding question - Any reason to keep the return type as unknown .. this is considered as settlement value later?
-function decode(res: Response, name: string): unknown {
+function decodeHeader(res: Response, name: string): unknown {
   const v = res.headers.get(name);
   if (!v) return null;
   try {
@@ -74,63 +64,78 @@ function decode(res: Response, name: string): unknown {
   }
 }
 
-async function attempt(label: string) {
-  // The deadline belongs to THIS attempt, so it is cleared before and
-  // snapshotted immediately after. Leaving it in a module-level variable
-  // would break two ways: concurrent requests clobber each other between
-  // signing and diagnosis, and a stale value survives an attempt whose
-  // selection or signing failed, so the next diagnosis compares against a
-  // deadline from a payment that was never made.
+async function attempt(n: number) {
+  // The deadline belongs to THIS attempt: cleared before, snapshotted
+  // immediately after. A module-level value breaks two ways — concurrent
+  // requests clobber each other between signing and diagnosis, and a stale
+  // value survives an attempt whose signing failed, so the next diagnosis
+  // compares against a payment that was never made.
   observedDeadline = undefined;
   const res = await pay(URL);
-  const deadline = observedDeadline; //!Understanding question - where this deadline is being used actually?
+  const deadline = observedDeadline;
 
-  const settlement = decode(res, "payment-response");
-  console.log(`\n[${label}] status ${res.status}`);
+  const settlement = decodeHeader(res, "payment-response");
+  console.log(`\n[attempt ${n}] status ${res.status}`);
   if (settlement) console.log(JSON.stringify(settlement, null, 2));
   return { res, settlement, deadline };
 }
 
 console.log(`agent ${agent.address} requesting ${URL}`);
 
-//! Understanding question - We are hardcoding the attempt number like attempt 1 .. why so?
-//! Understanding question - Is there is a cap on the number of attempts? If yes then how many, and how are we deciding that cap? If no then why do we not have it?
-let { res, settlement, deadline } = await attempt("attempt 1");
+let n = 1;
+let { res, settlement, deadline } = await attempt(n);
 
-//! Understanding question - I didn't understand this died at VERIFY thing .. Want clarification on what is happening and when can we expect a payment to fail?
-// A 402 with no settlement header means the payment died at VERIFY, and the
-// merchant drops VerifyResponse.extra — so no verdict reaches us.
-//
-// We don't need one. The 402 gave us the deadline and the chain will give us
-// the height. This runs the SAME classify the facilitator runs, on the same
-// inputs, in a different process: one module, two callers, so they cannot
-// drift apart. And we trust nobody's report of whether our own payment died.
-if (res.status === 402 && !settlement && deadline !== undefined) {
-  //! Suggestion - here first build the ClassifyInput structure using the values and then pass to the function.
-  //! Understanding question - what are the different phases that we are considering across this project? And what is the inference that we are making based on the phase? 
+/**
+ * A 402 with no PAYMENT-RESPONSE means the payment died at VERIFY: the
+ * merchant asked the facilitator, the answer was no, and nothing was
+ * broadcast. The merchant drops VerifyResponse.extra, so no verdict reaches
+ * us — but we don't need one. The 402 gave us the deadline and the chain
+ * gives us the height.
+ *
+ * This runs the SAME classify the facilitator runs, on the same inputs, in a
+ * different process: one module, two callers, so they cannot drift. And we
+ * trust nobody's report of whether our own payment died.
+ */
+while (res.status === 402 && !settlement && deadline !== undefined && n <= config.maxRetries) {
+  let currentBlockHeight: bigint;
+  try {
+    currentBlockHeight = await chain.getBlockHeight();
+  } catch (err) {
+    // UNKNOWN IS NEVER RESIGNABLE. Without a height we cannot prove the
+    // payment expired, and the previous code crashed here — after an
+    // attempt whose outcome we do not know, which is the worst possible
+    // moment to die.
+    console.error(`[diagnosis] cannot reach the chain, so not retrying: ${String(err)}`);
+    break;
+  }
+
   const verdict = classify({
-    phase: "verify", //! Suggestion - use of enums across the across the project is suggested but then if we can't then I want a proper reasoning for that too. I won't point the same use enum suggestion at all places so this comment is meant to be considered for the entire service.
+    phase: Phase.Verify,
     ok: false,
     signature: "",
     lastValidBlockHeight: deadline,
-    currentBlockHeight: await chain.getBlockHeight(), //! Understanding question - this is an on chain call .. what if the rpc is down or something like that?
+    currentBlockHeight,
   });
   console.log(`\n[diagnosis] ${verdict.state} resignable=${verdict.resignable} — ${verdict.reason}`);
 
-  if (verdict.resignable) {
-    // Safe ONLY because nothing was broadcast: past lastValidBlockHeight a
-    // Solana transaction is permanently dead, so the original cannot land
-    // late and this is one payment, not two.
-    console.log("[diagnosis] expired before broadcast — paying once more");
-    ({ res, settlement, deadline } = await attempt("attempt 2"));
-  } else {
-    // LIMIT: AlreadyProcessed lands here too. Not retrying is the safe
-    // answer, but we cannot tell "already paid" from "malformed" without a
-    // ledger keyed by request.
-    //! Understanding question - Is there a better way to handle this? 
-    console.log("[diagnosis] not resignable — stopping");
+  if (!verdict.resignable) {
+    // LIMIT (D10): AlreadyProcessed lands here too. Not retrying is the SAFE
+    // answer but not the TRUE one — the money already moved and the honest
+    // reply is a receipt. Telling those apart needs a ledger keyed by
+    // payment-identifier.
+    console.log(`[diagnosis] ${verdict.state} is not resignable — stopping`);
+    break;
   }
+
+  // Safe ONLY because nothing was broadcast: past lastValidBlockHeight a
+  // Solana transaction is permanently dead, so the original cannot land late
+  // and this is one payment, not two.
+  if (verdict.state !== SettlementState.Expired) break;
+
+  n += 1;
+  console.log(`[diagnosis] expired before broadcast — paying again (${n}/${config.maxRetries + 1})`);
+  ({ res, settlement, deadline } = await attempt(n));
 }
 
-console.log(`\nfinal status ${res.status}`);
+console.log(`\nfinal status ${res.status} after ${n} attempt(s)`);
 console.log(await res.text());

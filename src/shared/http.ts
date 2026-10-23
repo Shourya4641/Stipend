@@ -64,6 +64,23 @@ export function errorHandler(logger: Logger = silentLogger()) {
  * ledger exists the intent row survives the crash and a reconciler finishes
  * the job; staying alive is how you get a second broadcast.
  */
+/**
+ * Run a role's startup, turning a configuration problem into a readable
+ * message instead of a stack trace.
+ *
+ * A missing variable or key is not a crash — it is the operator being told
+ * what to fix. Stack traces for these train people to skim past errors.
+ */
+export async function start(main: () => Promise<void>): Promise<void> {
+  try {
+    await main();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`\nstartup failed:\n  ${message}\n`);
+    process.exit(1);
+  }
+}
+
 export function exitOnFatal(): void {
   for (const signal of ["unhandledRejection", "uncaughtException"] as const) {
     process.on(signal, (err) => {

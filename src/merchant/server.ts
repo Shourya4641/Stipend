@@ -5,7 +5,7 @@
 import { x402ResourceServer, HTTPFacilitatorClient } from "@x402/core/server";
 import { registerExactSvmScheme } from "@x402/svm/exact/server";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
-import { loadOrCreateSigner } from "../shared/keys";
+
 import { loadConfig } from "./config";
 import { createApp } from "./app";
 import { createLogger } from "../shared/logger";
@@ -21,7 +21,8 @@ const logger = createLogger({
 
 // The merchant holds no SOL and no key it can spend with — only its own
 // address, to be paid into.
-const merchant = await loadOrCreateSigner("merchant");
+// An address, not a key. The merchant cannot spend and must not be able to.
+const payTo = config.payTo;
 
 //   @x402/core 2.28.0 -> HTTPFacilitatorClient, constructor(config?: FacilitatorConfig)
 const facilitatorClient = new HTTPFacilitatorClient({ url: config.facilitatorUrl });
@@ -38,11 +39,11 @@ registerExactSvmScheme(server, {
 
 createApp({
   server,
-  payTo: merchant.address,
+  payTo,
   price: config.price,
   maxTimeoutSeconds: config.maxTimeoutSeconds,
   syncFacilitatorOnStart: true,
   logger,
 }).listen(config.port, () => {
-  logger.info({ port: config.port, payTo: merchant.address }, "merchant listening");
+  logger.info({ port: config.port, payTo }, "merchant listening");
 });

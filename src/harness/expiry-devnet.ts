@@ -1,7 +1,7 @@
 import { x402Client, x402HTTPClient } from "@x402/core/client";
 import { registerExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
-import { loadOrCreateSigner } from "../shared/keys";
+import { loadOrCreateSigner } from "../tools/keys";
 import { createChain } from "../shared/chain";
 import { loadConfig } from "../tools/config";
 

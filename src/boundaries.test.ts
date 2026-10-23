@@ -22,18 +22,24 @@ const SRC = dirname(fileURLToPath(import.meta.url));
 
 const ROLES = ["agent", "merchant", "facilitator"] as const;
 
+/**
+ * tools/ is DEMO SCAFFOLDING. loadOrCreateSigner mints a new wallet when the
+ * key file is absent — convenient for a demo, wrong in production where a
+ * missing key must be a hard failure (D13). Product code loads keys through
+ * its own role's signer.ts, which reads and never creates.
+ */
 const FORBIDDEN: Record<string, readonly string[]> = {
   // A merchant that can import the facilitator can reach its fee-payer key.
-  merchant: ["facilitator", "agent"],
+  merchant: ["facilitator", "agent", "tools"],
   // An agent that can import the facilitator can read the spend policy it
   // is supposed to be subject to.
-  agent: ["facilitator", "merchant"],
+  agent: ["facilitator", "merchant", "tools"],
   // The facilitator is the trust boundary; it needs nobody else's internals.
-  facilitator: ["agent", "merchant"],
+  facilitator: ["agent", "merchant", "tools"],
   // THE ONE THAT WAS MISSING. Every role imports shared/, so a single
   // import from shared/ into a role gives every other role a transitive
   // path to it — while all the direct-import assertions above still pass.
-  shared: ["agent", "merchant", "facilitator"],
+  shared: ["agent", "merchant", "facilitator", "tools"],
 };
 
 /** Recursive: a role growing a subdirectory must not escape the check. */

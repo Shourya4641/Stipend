@@ -11,6 +11,13 @@ const schema = z.object({
 
   // A business decision, not a literal in a server file (D14). It changed
   // twice during testing, each time an edit-and-restart.
+  /**
+   * Where payment lands. An ADDRESS, not a key — the merchant holds nothing
+   * it can spend with, and this makes that structural rather than
+   * incidental (D13).
+   */
+  MERCHANT_PAY_TO: z.string().min(32, "a base58 Solana address"),
+
   MERCHANT_PRICE: z
     .string()
     .regex(/^\$\d+(\.\d+)?$/, 'must look like "$0.001" — note shells expand an unquoted $')
@@ -21,6 +28,7 @@ export type MerchantConfig = {
   chain: ChainConfig;
   port: number;
   facilitatorUrl: string;
+  payTo: string;
   price: string;
   /**
    * How long the merchant will wait for settlement. Coupled to Solana's
@@ -36,6 +44,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): MerchantConfig
     chain: { rpcUrl: e.SOLANA_RPC_DEVNET, wsUrl: e.SOLANA_WS_DEVNET },
     port: e.MERCHANT_PORT,
     facilitatorUrl: e.FACILITATOR_URL,
+    payTo: e.MERCHANT_PAY_TO,
     price: e.MERCHANT_PRICE,
     maxTimeoutSeconds: BLOCKHASH_VALIDITY_SECONDS,
   };

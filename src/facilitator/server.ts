@@ -5,7 +5,7 @@
 import { x402Facilitator } from "@x402/core/facilitator";
 import { registerExactSvmScheme } from "@x402/svm/exact/facilitator";
 import { toFacilitatorSvmSigner, SOLANA_DEVNET_CAIP2 } from "@x402/svm";
-import { loadOrCreateSigner } from "../shared/keys";
+import { loadFeePayer } from "./signer";
 import { createChain } from "../shared/chain";
 import { loadConfig } from "./config";
 import { createApp } from "./app";
@@ -26,7 +26,7 @@ const chain = createChain(config.chain);
 // The ONLY wallet in Stipend that holds SOL. It never holds USDC and never
 // moves the agent's money — it occupies the fee-payer slot and signs for
 // that slot alone.
-const feePayerKeypair = await loadOrCreateSigner("fee-payer");
+const feePayerKeypair = await loadFeePayer();
 
 // Asymmetric with the agent on purpose (D12): the agent's signer takes no
 // RPC because it only signs its own slot and hands the bytes away. The

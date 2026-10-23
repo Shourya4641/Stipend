@@ -4,7 +4,22 @@
  * One-per-restart discovery wastes a session. Called from each role's
  * loadConfig(), never at import time.
  */
+import { config as loadDotenv } from "dotenv";
 import type { z } from "zod";
+
+/**
+ * Load .env into process.env, once.
+ *
+ * Called from parseEnv rather than at import time, so merely importing a
+ * config module still has no side effects (D3). A real deployment injects
+ * variables and has no .env file; dotenv is a no-op then.
+ */
+let dotenvLoaded = false;
+function ensureDotenv(): void {
+  if (dotenvLoaded) return;
+  dotenvLoaded = true;
+  loadDotenv({ quiet: true });
+}
 
 export class ConfigError extends Error {
   constructor(role: string, issues: string[]) {
@@ -24,6 +39,7 @@ export function parseEnv<S extends z.ZodTypeAny>(
   schema: S,
   env: unknown,
 ): z.infer<S> {
+  ensureDotenv();
   const result = schema.safeParse(env);
   if (result.success) return result.data;
   throw new ConfigError(

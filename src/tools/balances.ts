@@ -1,4 +1,4 @@
-import { loadOrCreateSigner } from "../shared/keys";
+import { loadOrCreateSigner } from "../tools/keys";
 import { createChain } from "../shared/chain";
 import { loadConfig } from "./config";
 

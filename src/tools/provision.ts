@@ -13,7 +13,7 @@ import {
   getCreateAssociatedTokenIdempotentInstructionAsync,
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
-import { loadOrCreateSigner } from "../shared/keys";
+import { loadOrCreateSigner } from "../tools/keys";
 import { createChain } from "../shared/chain";
 import { loadConfig } from "./config";
 

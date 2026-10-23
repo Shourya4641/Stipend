@@ -1,4 +1,4 @@
-import { loadOrCreateSigner } from "../shared/keys";
+import { loadOrCreateSigner } from "../tools/keys";
 
 const agent = await loadOrCreateSigner("agent");
 const feePayer = await loadOrCreateSigner("fee-payer");

@@ -1,0 +1,19 @@
+# A judge should be able to run this project without my cloud account.
+#   docker compose up -d
+#   DATABASE_URL=postgres://stipend:stipend@127.0.0.1:5432/stipend pnpm db:migrate
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: stipend
+      POSTGRES_PASSWORD: stipend
+      POSTGRES_DB: stipend
+    ports: ["5432:5432"]
+    volumes: ["stipend-pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stipend"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  stipend-pg:

@@ -37,7 +37,19 @@ export const SettlementState = {
 } as const;
 export type SettlementState = (typeof SettlementState)[keyof typeof SettlementState];
 
-export const SETTLEMENT_STATES = Object.values(SettlementState);
+/**
+ * As a NON-EMPTY tuple, not a plain array.
+ *
+ * Object.values() returns `T[]`, and consumers that need to prove the list
+ * has at least one member — Drizzle's text({ enum }), an exhaustive switch —
+ * cannot use that. The assertion is safe because the object above is
+ * `as const` with known members; if it ever became empty, the type below
+ * would stop matching and the cast would fail to compile.
+ */
+export const SETTLEMENT_STATES = Object.values(SettlementState) as [
+  SettlementState,
+  ...SettlementState[],
+];
 
 /** States from which a payer may safely build and sign a NEW payment. */
 export const RESIGNABLE_STATES: readonly SettlementState[] = [

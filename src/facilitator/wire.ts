@@ -39,6 +39,8 @@ export const ALLOWED_NETWORKS: readonly Network[] = [SOLANA_DEVNET_CAIP2];
  */
 export const NO_DEADLINE = 2n ** 64n;
 
+//! Suggestion - Type assertion checks across the project .. no use of unknown or any .. if used then should be justified.
+
 /** The request was not a well-formed request. NOT a payment outcome. */
 export class WireError extends Error {
   constructor(message: string) {
@@ -128,6 +130,7 @@ export function parsePaymentPayload(v: unknown, path = "paymentPayload"): Paymen
  * Never throws: a missing deadline is a normal condition, not a protocol
  * violation — a merchant with no rpcUrl configured simply doesn't send one.
  */
+//! Suggestion - Across the entire project .. there are a few places like this where it looks we have over engineered it hence making it difficult to review and understand it. 
 export function deadlineOf(requirements: unknown): bigint {
   if (!isRecord(requirements)) return NO_DEADLINE;
   const extra = requirements["extra"];

@@ -2,7 +2,10 @@ import { x402Client, x402HTTPClient } from "@x402/core/client";
 import { registerExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
 import { loadOrCreateSigner } from "../shared/keys";
-import { usdcBalance } from "../shared/chain";
+import { createChain } from "../shared/chain";
+import { loadConfig } from "../tools/config";
+
+const chain = createChain(loadConfig().chain);
 
 const RPC_URL = process.env.SOLANA_RPC_DEVNET ?? "https://api.devnet.solana.com";
 const MERCHANT_URL = process.env.MERCHANT_URL ?? "http://127.0.0.1:4021";
@@ -24,7 +27,7 @@ function verdictOf(res: Response): unknown {
   }
 }
 
-const before = (await usdcBalance(agent.address)).atomic;
+const before = (await chain.usdcBalance(agent.address)).atomic;
 console.log(`agent USDC before: ${before}`);
 
 // --- One challenge, one signed payment. ---------------------------------
@@ -53,7 +56,7 @@ console.log(JSON.stringify(verdictOf(second), null, 2));
 // --- What did it cost? ---------------------------------------------------
 // Settlement is confirmed before the merchant replies, so no sleep needed;
 // if the number looks mid-flight, re-run src/balances.ts to confirm.
-const after = (await usdcBalance(agent.address)).atomic;
+const after = (await chain.usdcBalance(agent.address)).atomic;
 const spent = before - after;
 console.log(`\nagent USDC after:  ${after}`);
 console.log(`spent: ${spent} atomic (one payment = ${price})`);

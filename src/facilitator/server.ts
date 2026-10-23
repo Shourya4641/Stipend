@@ -4,10 +4,13 @@ import { registerExactSvmScheme } from "@x402/svm/exact/facilitator";
 import { toFacilitatorSvmSigner, SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { loadOrCreateSigner } from "../shared/keys";
 import { classify, classifyPass } from "../shared/classify";
-import { getBlockHeight } from "../shared/chain";
+import { createChain } from "../shared/chain";
 import { parseFacilitatorRequest, deadlineOf, WireError, attemptId } from "./wire";
 import { decide } from "./policy";
-import { CONSTANTS } from "../shared/constants";
+import { loadConfig } from "./config";
+
+const config = loadConfig();
+const chain = createChain(config.chain);
 
 // The ONLY wallet in Stipend that holds SOL. It never holds USDC and never
 // moves the agent's money — it occupies the fee-payer slot and signs for
@@ -20,10 +23,11 @@ const feePayerKeypair = await loadOrCreateSigner("fee-payer");
 // ledger, which the PendingSettlementStore work introduces.
 let policyVeto: string | undefined;
 
+//! Understanding question - The way we are creating, converting, and registering the signer is different from the way we are doing in the agent/client.ts .. why is it different? Want to understand the reasoning behind it if there is any. 
 // Wraps a kit signer into the shape x402 needs: getAddresses() + signTransaction().
 //   @x402/svm 2.28.0 -> signer-gUqhJy7y.d.mts:50 (FacilitatorSvmSigner)
 const signer = toFacilitatorSvmSigner(feePayerKeypair, {
-  defaultRpcUrl: CONSTANTS.RPC_URL,
+  defaultRpcUrl: config.chain.rpcUrl,
 });
 
 //   @x402/core 2.28.0 -> facilitator/index.d.mts:51
@@ -34,6 +38,8 @@ const facilitator = new x402Facilitator();
 //   or scheme options; we build the scheme by hand when we need those.
 registerExactSvmScheme(facilitator, { signer, networks: SOLANA_DEVNET_CAIP2 });
 
+//! Understanding question - What is this facilitator hook used for?
+//! Understanding question - this function is to ensure that befor the facilitator settles a payment, the payment load is correct right? If there is some other reasoning or if my understanding is wrong then please correct me with the correct understanding.
 //   @x402/core 2.28.0 -> facilitator/index.d.mts (FacilitatorBeforeSettleHook)
 facilitator.onBeforeSettle(async ({ requirements }) => {
   policyVeto = undefined;
@@ -46,10 +52,11 @@ facilitator.onBeforeSettle(async ({ requirements }) => {
   if (decision.allowed) return;
 
   policyVeto = decision.reason;
-  console.log(`[policy] VETO: ${policyVeto}`);
+  console.log(`[policy] VETO: ${policyVeto}`); //! Does VETO only exists for checking the amount?
   return { abort: true, reason: policyVeto };
 });
 
+//! Suggestion - This is not how service server file looks like .. use handler, routes, controllers, and repository for data format .. not modular at all
 const app = express();
 app.use(express.json());
 
@@ -64,6 +71,8 @@ app.get("/supported", (_req, res) => {
   });
 });
 
+//! Suggestion - Use proper dev and prod loggers. This suggestion is for the entire project .. will not be repeating the same suggestion later .. if there is a reason we should not go for using loggers then please lemme know. 
+//! Understanding question - How are we handling errors in the entire service? Please give me a detailed explanation of that.
 /**
  * A body we could not read is NOT a payment outcome.
  *
@@ -80,6 +89,7 @@ function wireFailure(res: express.Response, err: unknown): boolean {
 
 app.post("/verify", async (req, res) => {
   try {
+    //! Suggestion - This parsing looks over engineered .. also makes it confusing while reviewing it. Would like to understand the reason to go with this design and implementation and also would like to know if there is a better way to achieve the same in a better way.
     const { paymentPayload, paymentRequirements } = parseFacilitatorRequest(req.body);
     const id = attemptId(paymentPayload);
     const result = await facilitator.verify(paymentPayload, paymentRequirements);
@@ -91,15 +101,16 @@ app.post("/verify", async (req, res) => {
     // KNOWN LIMIT: "AlreadyProcessed" lands in `rejected`, the SAFE answer
     // (do not retry) but not the TRUE one (the money already moved).
     // Telling those apart needs a ledger keyed by request.
+    //! Understanding question - I want to understand the comment here .. the condition we are talking about here exactly and what are we trying to achieve here.
     const verdict = result.isValid
       ? classifyPass("verify")
       : classify({
-          phase: "verify",
+          phase: "verify",  //! Understanding question - In the classify function there is no check or condition when phase is verify .. so how is this call going to get handled? So if the classify is called here then basically it is going to hit the rejected version .. 
           ok: false,
           signature: "",
           errorText: result.invalidMessage ?? result.invalidReason,
           lastValidBlockHeight: deadlineOf(paymentRequirements),
-          currentBlockHeight: await getBlockHeight(),
+          currentBlockHeight: await chain.getBlockHeight(),
           refusalKind: "terms",
         });
 
@@ -138,6 +149,7 @@ app.post("/settle", async (req, res) => {
   // One source for the deadline, shared by the returned and thrown paths.
   const lastValidBlockHeight = deadlineOf(paymentRequirements);
 
+  //! Understanding question - what are we trying to achieve here? And also is there a better way to build this flow? Please explain in detail about it.
   const reply = async (args: {
     ok: boolean;
     signature: string;
@@ -145,12 +157,12 @@ app.post("/settle", async (req, res) => {
     base: Record<string, unknown>;
   }) => {
     const verdict = classify({
-      phase: "settle",
+      phase: "settle",  //! Understanding question - we are hardcoding the value of phase across the project .. is that a good coding practice or good design choice? Also, want to understand how are we handling different phases across the project.
       ok: args.ok,
       signature: args.signature,
       errorText: args.errorText,
       lastValidBlockHeight,
-      currentBlockHeight: await getBlockHeight(),
+      currentBlockHeight: await chain.getBlockHeight(),
       refusalKind: policyVeto ? "policy" : args.signature ? undefined : "terms",
     });
     console.log(
@@ -184,7 +196,7 @@ app.post("/settle", async (req, res) => {
     await reply({
       ok: false,
       signature: "",
-      errorText: err instanceof Error ? err.message : String(err),
+      errorText: err instanceof Error ? err.message : String(err),  
       base: {
         success: false,
         errorReason: policyVeto ? "policy_abort" : "settle_threw",
@@ -196,8 +208,10 @@ app.post("/settle", async (req, res) => {
   }
 });
 
-app.listen(CONSTANTS.FACILITATOR_PORT, () => {
+//! Suggestion - There should be separate file for storing the CONSTANTS and then fetching envs .. with validations on both across the service. If you think that there are different constants and envs that are need by agent, facilitator, and merchant and those should not be shared across the entire project then do lemme know I want to discuss if there is a better way to handle the constants and env values across the project.
+
+app.listen(config.port, () => {
   console.log(
-    `facilitator on :${CONSTANTS.FACILITATOR_PORT}, fee payer ${feePayerKeypair.address}`,
+    `facilitator on :${config.port}, fee payer ${feePayerKeypair.address}`,
   );
 });

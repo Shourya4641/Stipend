@@ -1,13 +1,10 @@
 /**
- * Every chain read in Stipend goes through this module.
+ * Every chain read in Stipend goes through here.
  *
- * Not a service: a module. A separate process would add a hop, a dependency
- * and a trust boundary without removing any — and for the agent's expiry
- * check it would actively hurt, because the whole point is that the agent
- * decides for itself rather than trusting someone's report of the height.
- *
- * What this does buy: one RPC endpoint, one place to add a fallback or
- * retries, one thing to stub in tests.
+ * A factory, not a module with top-level state (D15). Nothing is constructed
+ * when you merely import this file, so tests pass a fake `Chain` object
+ * instead of stubbing a module — and no process opens a websocket it never
+ * uses.
  */
 import {
   address,
@@ -16,61 +13,57 @@ import {
   sendAndConfirmTransactionFactory,
   type Address,
 } from "@solana/kit";
-import { CONSTANTS } from "./constants";
+import { USDC_MINT_ADDRESS } from "./chain-constants";
 
-export const USDC_MINT = address(CONSTANTS.USDC_MINT);
+export type ChainConfig = {
+  rpcUrl: string;
+  /**
+   * Its own value, not derived from rpcUrl. Replacing "http" with "ws" works
+   * on devnet and silently breaks for any provider whose websocket is on a
+   * different host.
+   */
+  wsUrl: string;
+};
 
-export const rpc = createSolanaRpc(CONSTANTS.RPC_URL);
+export type Chain = ReturnType<typeof createChain>;
 
-/**
- * Current block height.
- *
- * The number the whole expiry story turns on: compare it to the 402's
- * lastValidBlockHeight and you know whether a payment can still land,
- * without reading a single error message.
- */
-export async function getBlockHeight(): Promise<bigint> {
-  return rpc.getBlockHeight().send();
-}
+export function createChain(config: ChainConfig) {
+  const rpc = createSolanaRpc(config.rpcUrl);
+  const usdcMint = address(USDC_MINT_ADDRESS);
 
-export async function solLamports(owner: Address): Promise<bigint> {
-  const r = await rpc.getBalance(owner).send();
-  return r.value;
-}
+  return {
+    rpc,
+    usdcMint,
 
-/**
- * USDC held by an owner, in atomic units.
- *
- * `exists` is not cosmetic. On Solana a token balance lives in a separate
- * account per (owner, mint); a wallet that never held the token has no
- * account at all. Absent and zero are different states, and the absent one
- * makes TransferChecked fail with InvalidAccountData.
- */
-export async function usdcBalance(
-  owner: Address,
-): Promise<{ exists: boolean; atomic: bigint }> {
-  const r = await rpc
-    .getTokenAccountsByOwner(owner, { mint: USDC_MINT }, { encoding: "jsonParsed" })
-    .send();
-  const raw = r.value[0]?.account.data.parsed.info.tokenAmount.amount;
-  return raw === undefined
-    ? { exists: false, atomic: 0n }
-    : { exists: true, atomic: BigInt(raw) };
-}
+    /**
+     * The number the whole expiry story turns on: compare it to the 402's
+     * lastValidBlockHeight and you know whether a payment can still land,
+     * without reading a single error message.
+     */
+    getBlockHeight: (): Promise<bigint> => rpc.getBlockHeight().send(),
 
-/**
- * Lazily built, because creating the subscriptions transport opens a
- * websocket. Only provision.ts sends transactions; the agent, merchant and
- * tests should not hold a socket they never use.
- */
-let cached: ReturnType<typeof sendAndConfirmTransactionFactory> | undefined;
+    solLamports: async (owner: Address): Promise<bigint> =>
+      (await rpc.getBalance(owner).send()).value,
 
-export function sendAndConfirm() {
-  if (!cached) {
-    const rpcSubscriptions = createSolanaRpcSubscriptions(
-      CONSTANTS.RPC_URL.replace(/^http/, "ws"),
-    );
-    cached = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
-  }
-  return cached;
+    /**
+     * `exists` is not cosmetic. On Solana a token balance lives in a separate
+     * account per (owner, mint); a wallet that never held the token has no
+     * account at all. Absent and zero are different states, and the absent
+     * one makes TransferChecked fail with InvalidAccountData.
+     */
+    usdcBalance: async (owner: Address): Promise<{ exists: boolean; atomic: bigint }> => {
+      const r = await rpc
+        .getTokenAccountsByOwner(owner, { mint: usdcMint }, { encoding: "jsonParsed" })
+        .send();
+      const raw = r.value[0]?.account.data.parsed.info.tokenAmount.amount;
+      return raw === undefined
+        ? { exists: false, atomic: 0n }
+        : { exists: true, atomic: BigInt(raw) };
+    },
+
+    sendAndConfirm: sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions: createSolanaRpcSubscriptions(config.wsUrl),
+    }),
+  };
 }

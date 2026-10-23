@@ -3,18 +3,23 @@ import { wrapFetchWithPayment } from "@x402/fetch";
 import { registerExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
 import { loadOrCreateSigner } from "../shared/keys";
-import { getBlockHeight } from "../shared/chain";
+import { createChain } from "../shared/chain";
 import { classify } from "../shared/classify";
-import { CONSTANTS } from "../shared/constants";
+import { loadConfig } from "./config";
 
-const URL = `${CONSTANTS.MERCHANT_URL}/safety-check?mint=So11111111111111111111111111111111111111112`;
+// Parsed once, here at the entrypoint — never at import time (D3).
+const config = loadConfig();
+const chain = createChain(config.chain);
 
-// Holds USDC and zero SOL. It cannot broadcast anything by itself — that is
-// the constraint the whole design exists to work around.
-const agent = await loadOrCreateSigner("agent");
+//! Suggestion - make the address So111.. as a constant and then call it here rather than hard coding it.
+const URL = `${config.merchantUrl}/safety-check?mint=So11111111111111111111111111111111111111112`;
+
+// Holds USDC and zero SOL. It cannot broadcast anything by itself
+const agent = await loadOrCreateSigner("agent"); //! Understanding question - When this goes live, how is this signer creation supposed to work?
 
 const client = new x402Client();
-registerExactSvmScheme(client, { signer: toClientSvmSigner(agent) });
+//! Understanding question - using registerExactSvmScheme() so we are saying look our x402 client is eligiable to make some payments via SVM i.e. Solana? correct me if I am wrong
+registerExactSvmScheme(client, { signer: toClientSvmSigner(agent) }); //! General question -  why do we need this toClientSvmSigner() at all? Like otherwise what would happen if we don't use it?
 
 /**
  * Remember the deadline of the challenge we actually signed against.
@@ -28,16 +33,19 @@ registerExactSvmScheme(client, { signer: toClientSvmSigner(agent) });
  * records as a side effect.
  *   @x402/core 2.28.0 -> x402Client-C7_OogbK.d.mts:2029 / PaymentPolicy :1881
  */
+//! Understanding question - when the registerPolicy() runs for the first time, what values are we passing for _version and requirements?
+//! Understanding question - how are we relating the dealine with the challenge that we signed against?
 let observedDeadline: bigint | undefined;
 client.registerPolicy((_version, requirements) => {
-  const d = requirements[0]?.extra?.["lastValidBlockHeight"];
-  observedDeadline = d === undefined ? undefined : BigInt(String(d));
+  const deadline = requirements[0]?.extra?.["lastValidBlockHeight"];
+  observedDeadline = deadline === undefined ? undefined : BigInt(String(deadline));
   return requirements;
 });
 
 // STALL_MS stalls the agent between receiving the 402 and signing against
 // it, so the blockhash dies in the gap. This is the real failure — a slow
 // agent, a slow network — not a fabricated input.
+//! Understanding question - Do we need this in production or when we go live?
 const STALL_MS = Number(process.env.STALL_MS ?? 0);
 if (STALL_MS > 0) {
   let stalled = false;
@@ -55,6 +63,7 @@ if (STALL_MS > 0) {
 
 const pay = wrapFetchWithPayment(fetch, client);
 
+//! Understanding question - Any reason to keep the return type as unknown .. this is considered as settlement value later?
 function decode(res: Response, name: string): unknown {
   const v = res.headers.get(name);
   if (!v) return null;
@@ -74,7 +83,7 @@ async function attempt(label: string) {
   // deadline from a payment that was never made.
   observedDeadline = undefined;
   const res = await pay(URL);
-  const deadline = observedDeadline;
+  const deadline = observedDeadline; //!Understanding question - where this deadline is being used actually?
 
   const settlement = decode(res, "payment-response");
   console.log(`\n[${label}] status ${res.status}`);
@@ -84,8 +93,11 @@ async function attempt(label: string) {
 
 console.log(`agent ${agent.address} requesting ${URL}`);
 
+//! Understanding question - We are hardcoding the attempt number like attempt 1 .. why so?
+//! Understanding question - Is there is a cap on the number of attempts? If yes then how many, and how are we deciding that cap? If no then why do we not have it?
 let { res, settlement, deadline } = await attempt("attempt 1");
 
+//! Understanding question - I didn't understand this died at VERIFY thing .. Want clarification on what is happening and when can we expect a payment to fail?
 // A 402 with no settlement header means the payment died at VERIFY, and the
 // merchant drops VerifyResponse.extra — so no verdict reaches us.
 //
@@ -94,12 +106,14 @@ let { res, settlement, deadline } = await attempt("attempt 1");
 // inputs, in a different process: one module, two callers, so they cannot
 // drift apart. And we trust nobody's report of whether our own payment died.
 if (res.status === 402 && !settlement && deadline !== undefined) {
+  //! Suggestion - here first build the ClassifyInput structure using the values and then pass to the function.
+  //! Understanding question - what are the different phases that we are considering across this project? And what is the inference that we are making based on the phase? 
   const verdict = classify({
-    phase: "verify",
+    phase: "verify", //! Suggestion - use of enums across the across the project is suggested but then if we can't then I want a proper reasoning for that too. I won't point the same use enum suggestion at all places so this comment is meant to be considered for the entire service.
     ok: false,
     signature: "",
     lastValidBlockHeight: deadline,
-    currentBlockHeight: await getBlockHeight(),
+    currentBlockHeight: await chain.getBlockHeight(), //! Understanding question - this is an on chain call .. what if the rpc is down or something like that?
   });
   console.log(`\n[diagnosis] ${verdict.state} resignable=${verdict.resignable} — ${verdict.reason}`);
 
@@ -113,6 +127,7 @@ if (res.status === 402 && !settlement && deadline !== undefined) {
     // LIMIT: AlreadyProcessed lands here too. Not retrying is the safe
     // answer, but we cannot tell "already paid" from "malformed" without a
     // ledger keyed by request.
+    //! Understanding question - Is there a better way to handle this? 
     console.log("[diagnosis] not resignable — stopping");
   }
 }

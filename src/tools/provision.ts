@@ -14,7 +14,10 @@ import {
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
 import { loadOrCreateSigner } from "../shared/keys";
-import { rpc, sendAndConfirm, USDC_MINT } from "../shared/chain";
+import { createChain } from "../shared/chain";
+import { loadConfig } from "./config";
+
+const chain = createChain(loadConfig().chain);
 
 const feePayer = await loadOrCreateSigner("fee-payer");
 const merchant = await loadOrCreateSigner("merchant");
@@ -23,7 +26,7 @@ const merchant = await loadOrCreateSigner("merchant");
 // of (owner, mint, token program), so it is knowable before it exists.
 const [ata] = await findAssociatedTokenPda({
   owner: merchant.address,
-  mint: USDC_MINT,
+  mint: chain.usdcMint,
   tokenProgram: TOKEN_PROGRAM_ADDRESS,
 });
 console.log(`merchant ${merchant.address}`);
@@ -34,10 +37,10 @@ console.log(`its USDC account would be ${ata}`);
 const createIx = await getCreateAssociatedTokenIdempotentInstructionAsync({
   payer: feePayer,
   owner: merchant.address,
-  mint: USDC_MINT,
+  mint: chain.usdcMint,
 });
 
-const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+const { value: latestBlockhash } = await chain.rpc.getLatestBlockhash().send();
 
 // Four things every Solana transaction needs, in order: a version, a fee
 // payer, a lifetime, and instructions. pipe() threads the message through
@@ -52,5 +55,6 @@ const message = pipe(
 const signed = await signTransactionMessageWithSigners(message);
 assertIsTransactionWithBlockhashLifetime(signed);
 
-await sendAndConfirm()(signed, { commitment: "confirmed" });
+//! Understanding question - Please explain to me the way we have written sendAndConfirm() here .. I am not sure of this implementation pattern.
+await chain.sendAndConfirm(signed, { commitment: "confirmed" });
 console.log(`confirmed: ${getSignatureFromTransaction(signed)}`);

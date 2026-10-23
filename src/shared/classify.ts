@@ -1,3 +1,4 @@
+//! Have a separate file for the storing the enums and types for all the different services.
 /**
  * Settlement classification: did this payment reach the chain, and is it
  * safe to sign a replacement?
@@ -6,6 +7,7 @@
  * not "what did the error say". Error text is a hint. A signature is a fact.
  */
 
+//! Use enums
 export const SETTLEMENT_STATES = [
   "rejected",
   "expired",
@@ -35,7 +37,7 @@ export type Classification = {
 
 export type ClassifyInput = {
   /** Which half of the protocol produced this outcome. */
-  phase: "verify" | "settle";
+  phase: "verify" | "settle"; //! use enums
   /** Did that call report success? */
   ok: boolean;
   /** Transaction signature. Present ONLY once bytes were broadcast. */
@@ -55,7 +57,7 @@ export type ClassifyInput = {
    *   "terms"   — wrong by construction (bad amount, missing account)
    *   "unknown" — unattributed; treated as "terms", the safer default
    */
-  refusalKind?: "policy" | "terms" | "unknown" | undefined;
+  refusalKind?: "policy" | "terms" | "unknown" | undefined; //! use enums
 };
 
 export function classify(input: ClassifyInput): Classification {
@@ -69,6 +71,7 @@ export function classify(input: ClassifyInput): Classification {
     refusalKind,
   } = input;
 
+  //! Refusal from whom would return the signature as empty?
   // SettleResponse.transaction is a REQUIRED string in @x402/core, so a
   // refusal that never broadcast arrives as "". Normalise here rather than
   // trusting every caller: an empty signature must never read as "broadcast".
@@ -102,7 +105,7 @@ export function classify(input: ClassifyInput): Classification {
   // ---- 3. A signature exists. This dominates everything below. -----------
   // Bytes went to the chain. We cannot tell from here whether they landed:
   // the RPC may have failed while the transaction confirmed. The ONLY safe
-  // move is to reconcile against the chain, never to re-sign.
+  // move is to reconcile against the chain, never to re-sign.  //! How are we reconciling and where are we reconciling?
   //
   // Deliberately placed above the expiry check: an expired-looking error
   // AFTER broadcast does not make re-signing safe.
@@ -131,7 +134,7 @@ export function classify(input: ClassifyInput): Classification {
   // ---- 5. Nothing broadcast, still within the window. --------------------
   // The payment was refused on its merits: wrong amount, missing account,
   // policy veto. Re-signing identical terms produces an identical refusal,
-  // so do not retry automatically — surface it.
+  // so do not retry automatically — surface it.  //! What happens after it is surfaced? How are we handling post surfacing the scenario?
   // A policy refusal may lapse; a malformed payment never will. Unattributed
   // refusals are treated as terms — the safe default is "do not retry".
   return {
@@ -142,6 +145,8 @@ export function classify(input: ClassifyInput): Classification {
   };
 }
 
+//! This is only getting called in the test .. what other use does this have?
+//! How are we getting the values of onChain parameter here? Are we making some on chain call for it?
 /**
  * Resolve a `pending` classification against the chain.
  *
@@ -185,12 +190,12 @@ export function resolvePending(
  * went wrong and is retrying safe", which is all `classify` answers.
  */
 export type PassVerdict = {
-  state: "verified" | "settled";
+  state: "verified" | "settled"; //! use enums
   signature?: string | undefined;
 };
 
 export function classifyPass(
-  phase: "verify" | "settle",
+  phase: "verify" | "settle", //! use enums
   signature?: string,
 ): PassVerdict {
   return phase === "verify"

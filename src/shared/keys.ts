@@ -1,15 +1,18 @@
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
-import { CONSTANTS } from "./constants";
+
+// Demo scaffolding. Moves to tools/ in Stage C (D13): the library must
+// ACCEPT a signer, never create one.
+const KEY_DIR = ".keys";
 
 /**
  * Load a signer from .keys/, creating it on first use.
  * Stored form is the 32-byte Ed25519 SEED as a JSON number array.
  */
 export async function loadOrCreateSigner(name: string) {
-  mkdirSync(CONSTANTS.KEY_DIR, { recursive: true, mode: 0o700 });
-  const path = `${CONSTANTS.KEY_DIR}/${name}.json`;
+  mkdirSync(KEY_DIR, { recursive: true, mode: 0o700 });
+  const path = `${KEY_DIR}/${name}.json`;
 
   let seed: Uint8Array;
 

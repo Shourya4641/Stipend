@@ -1,11 +1,14 @@
 import { loadOrCreateSigner } from "../shared/keys";
-import { solLamports, usdcBalance } from "../shared/chain";
+import { createChain } from "../shared/chain";
+import { loadConfig } from "./config";
+
+const chain = createChain(loadConfig().chain);
 
 for (const name of ["agent", "fee-payer", "merchant"]) {
   const signer = await loadOrCreateSigner(name);
 
-  const sol = await solLamports(signer.address);
-  const usdc = await usdcBalance(signer.address);
+  const sol = await chain.solLamports(signer.address);
+  const usdc = await chain.usdcBalance(signer.address);
 
   // "no USDC account" and "0" are different on-chain states, not a display
   // nicety: the absent one makes TransferChecked fail with InvalidAccountData.

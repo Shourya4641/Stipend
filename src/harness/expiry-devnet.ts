@@ -2,7 +2,10 @@ import { x402Client, x402HTTPClient } from "@x402/core/client";
 import { registerExactSvmScheme } from "@x402/svm/exact/client";
 import { toClientSvmSigner } from "@x402/svm";
 import { loadOrCreateSigner } from "../shared/keys";
-import { getBlockHeight, solLamports } from "../shared/chain";
+import { createChain } from "../shared/chain";
+import { loadConfig } from "../tools/config";
+
+const chain = createChain(loadConfig().chain);
 
 const RPC_URL = process.env.SOLANA_RPC_DEVNET ?? "https://api.devnet.solana.com";
 const MERCHANT_URL = process.env.MERCHANT_URL ?? "http://127.0.0.1:4021";
@@ -27,7 +30,7 @@ const httpClient = new x402HTTPClient(client);
   if (r.status !== 200) process.exit(1);
 }
 
-const before = await solLamports(agent.address);
+const before = await chain.solLamports(agent.address);
 console.log(`agent SOL before: ${before}`);
 
 // 1. Get the challenge.
@@ -44,7 +47,7 @@ console.log("payment signed, holding it...");
 
 // 3. Wait until the chain is past the deadline.
 while (true) {
-  const height = await getBlockHeight();
+  const height = await chain.getBlockHeight();
   if (height > deadline) {
     console.log(`chain at ${height} > ${deadline} — payment is now dead`);
     break;
@@ -60,7 +63,7 @@ const res = await fetch(URL, { headers: httpClient.encodePaymentSignatureHeader(
 console.log(`\nmerchant status: ${res.status}`);
 console.log(`body: ${(await res.text()).slice(0, 200)}`);
 
-const after = await solLamports(agent.address);
+const after = await chain.solLamports(agent.address);
 console.log(`agent SOL after:  ${after}  (delta ${after - before})`);
 console.log(
   res.status === 200

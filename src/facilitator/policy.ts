@@ -31,6 +31,7 @@ export const DEFAULT_POLICY: PolicyConfig = {
  * Takes the amount already parsed, so this stays testable without a chain,
  * a server or a request.
  */
+//! Understanding question - Why are we setting the config this way here .. looks like over engineered stuff?
 export function decide(amountAtomic: bigint, config: PolicyConfig = DEFAULT_POLICY): PolicyDecision {
   if (amountAtomic <= 0n) {
     return { allowed: false, reason: `non-positive amount ${amountAtomic}` };

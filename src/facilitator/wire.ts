@@ -22,6 +22,8 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { PaymentPayload, PaymentRequirements } from "@x402/core/types";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
+import { atomicFromString, type AtomicAmount } from "../shared/amount";
+import { USDC_DECIMALS } from "../shared/chain-constants";
 
 /** The request was not a well-formed request. NOT a payment outcome. */
 export class WireError extends Error {
@@ -95,6 +97,18 @@ function parse<S extends z.ZodTypeAny>(schema: S, value: unknown): z.infer<S> {
 
 export function parsePaymentRequirements(v: unknown): PaymentRequirements {
   return parse(requirementsSchema, v) satisfies PaymentRequirements;
+}
+
+/**
+ * The amount, branded, alongside the SDK-shaped object.
+ *
+ * Kept separate rather than branding `amount` in place: the SDK declares
+ * `amount: string`, so a branded field there would break
+ * `satisfies PaymentRequirements`. This way the route never converts by
+ * hand — it asks for the parsed amount and the decimals are already stated.
+ */
+export function amountOf(r: PaymentRequirements): AtomicAmount {
+  return atomicFromString(r.amount, USDC_DECIMALS);
 }
 
 export function parsePaymentPayload(v: unknown): PaymentPayload {

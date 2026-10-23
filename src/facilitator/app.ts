@@ -2,8 +2,8 @@ import express from "express";
 import type { x402Facilitator } from "@x402/core/facilitator";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { classify, classifyPass } from "../shared/classify";
-import { parseFacilitatorRequest, deadlineOf, WireError, attemptId } from "./wire";
-import { decide } from "./policy";
+import { parseFacilitatorRequest, deadlineOf, WireError, attemptId, amountOf } from "./wire";
+import { decide, DEFAULT_POLICY, type PolicyConfig } from "./policy";
 
 /**
  * What the routes need from the SDK — an interface, not the concrete class.
@@ -23,6 +23,8 @@ export type ChainReader = { getBlockHeight(): Promise<bigint> };
 export type FacilitatorDeps = {
   facilitator: FacilitatorCore;
   chain: ChainReader;
+  /** The spend policy. Explicit so a test can set a cap it controls. */
+  policy?: PolicyConfig;
 };
 
 /**
@@ -33,7 +35,7 @@ export type FacilitatorDeps = {
  * facilitator.
  */
 export function createApp(deps: FacilitatorDeps): express.Express {
-  const { facilitator, chain } = deps;
+  const { facilitator, chain, policy = DEFAULT_POLICY } = deps;
 
   // Scoped to this app instance, not the module. Two concurrent settles can
   // still read each other's veto — that race is real and D4 deletes the
@@ -45,8 +47,10 @@ export function createApp(deps: FacilitatorDeps): express.Express {
   //   @x402/core 2.28.0 -> facilitator/index.d.mts (FacilitatorBeforeSettleHook)
   facilitator.onBeforeSettle(async ({ requirements }) => {
     policyVeto = undefined;
-    const amount = BigInt(requirements.amount);
-    const decision = decide(amount);
+    // amountOf states the decimals once, here, instead of every call site
+    // doing BigInt() and hoping the units match the cap.
+    const amount = amountOf(requirements);
+    const decision = decide(amount, policy);
 
     // No id here: the hook sees requirements, not the payload. Correlate by
     // the [settle] line that follows it.

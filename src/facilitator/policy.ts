@@ -1,3 +1,5 @@
+import { toAtomic, type AtomicAmount } from "../shared/amount";
+import { USDC_DECIMALS } from "../shared/chain-constants";
 /**
  * Stipend's spend policy — the reason this project exists.
  *
@@ -18,11 +20,11 @@ export type PolicyDecision =
 
 export type PolicyConfig = {
   /** Per-payment cap in atomic token units. 10_000 = 0.01 USDC at 6 decimals. */
-  maxAtomicPerPayment: bigint;
+  maxAtomicPerPayment: AtomicAmount;
 };
 
 export const DEFAULT_POLICY: PolicyConfig = {
-  maxAtomicPerPayment: 10_000n,
+  maxAtomicPerPayment: toAtomic(10_000n, USDC_DECIMALS),
 };
 
 /**
@@ -32,9 +34,12 @@ export const DEFAULT_POLICY: PolicyConfig = {
  * a server or a request.
  */
 //! Understanding question - Why are we setting the config this way here .. looks like over engineered stuff?
-export function decide(amountAtomic: bigint, config: PolicyConfig = DEFAULT_POLICY): PolicyDecision {
-  if (amountAtomic <= 0n) {
-    return { allowed: false, reason: `non-positive amount ${amountAtomic}` };
+export function decide(amountAtomic: AtomicAmount, config: PolicyConfig): PolicyDecision {
+  // Only zero needs checking here: toAtomic refuses negatives at
+  // construction, so an AtomicAmount cannot be negative. The type did the
+  // other half of this guard.
+  if (amountAtomic === 0n) {
+    return { allowed: false, reason: "zero amount" };
   }
   if (amountAtomic > config.maxAtomicPerPayment) {
     return {

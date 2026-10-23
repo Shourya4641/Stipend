@@ -8,8 +8,16 @@ import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { loadOrCreateSigner } from "../shared/keys";
 import { loadConfig } from "./config";
 import { createApp } from "./app";
+import { createLogger } from "../shared/logger";
+import { exitOnFatal } from "../shared/http";
+
+exitOnFatal();
 
 const config = loadConfig();
+const logger = createLogger({
+  service: "merchant",
+  pretty: process.env["NODE_ENV"] !== "production",
+});
 
 // The merchant holds no SOL and no key it can spend with — only its own
 // address, to be paid into.
@@ -34,6 +42,7 @@ createApp({
   price: config.price,
   maxTimeoutSeconds: config.maxTimeoutSeconds,
   syncFacilitatorOnStart: true,
+  logger,
 }).listen(config.port, () => {
-  console.log(`merchant on :${config.port}, paid to ${merchant.address}`);
+  logger.info({ port: config.port, payTo: merchant.address }, "merchant listening");
 });

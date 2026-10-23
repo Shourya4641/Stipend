@@ -2,8 +2,11 @@ import express from "express";
 import type { x402Facilitator } from "@x402/core/facilitator";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { classify, classifyPass } from "../shared/classify";
-import { parseFacilitatorRequest, deadlineOf, WireError, attemptId, amountOf } from "./wire";
+import { deadlineOf, attemptId, amountOf, facilitatorRequestSchema } from "./wire";
 import { decide, DEFAULT_POLICY, type PolicyConfig } from "./policy";
+import { withBody, errorHandler } from "../shared/http";
+import { UpstreamError } from "../shared/errors";
+import { silentLogger, type Logger } from "../shared/logger";
 
 /**
  * What the routes need from the SDK — an interface, not the concrete class.
@@ -25,6 +28,8 @@ export type FacilitatorDeps = {
   chain: ChainReader;
   /** The spend policy. Explicit so a test can set a cap it controls. */
   policy?: PolicyConfig;
+  /** Defaults to silent: route tests assert on responses, not noise. */
+  logger?: Logger;
 };
 
 /**
@@ -35,31 +40,16 @@ export type FacilitatorDeps = {
  * facilitator.
  */
 export function createApp(deps: FacilitatorDeps): express.Express {
-  const { facilitator, chain, policy = DEFAULT_POLICY } = deps;
+  const { facilitator, chain, policy = DEFAULT_POLICY, logger = silentLogger() } = deps;
 
-  // Scoped to this app instance, not the module. Two concurrent settles can
-  // still read each other's veto — that race is real and D4 deletes the
-  // variable entirely by moving the decision into the route. Per-instance is
-  // strictly better than per-module in the meantime, and gives tests
-  // isolation.
-  let policyVeto: string | undefined;
-
-  //   @x402/core 2.28.0 -> facilitator/index.d.mts (FacilitatorBeforeSettleHook)
+  // Defence in depth only. The route decides BEFORE calling settle (below),
+  // so nothing depends on catching this hook's exception any more — which is
+  // how a policy decision came to be disguised as an error in the first
+  // place (D4). The hook still fires if the SDK is driven from elsewhere.
   facilitator.onBeforeSettle(async ({ requirements }) => {
-    policyVeto = undefined;
-    // amountOf states the decimals once, here, instead of every call site
-    // doing BigInt() and hoping the units match the cap.
-    const amount = amountOf(requirements);
-    const decision = decide(amount, policy);
-
-    // No id here: the hook sees requirements, not the payload. Correlate by
-    // the [settle] line that follows it.
-    console.log(`[policy] settle requested: ${amount} of ${requirements.asset}`);
+    const decision = decide(amountOf(requirements), policy);
     if (decision.allowed) return;
-
-    policyVeto = decision.reason;
-    console.log(`[policy] VETO: ${policyVeto}`);
-    return { abort: true, reason: policyVeto };
+    return { abort: true, reason: decision.reason };
   });
 
   const app = express();
@@ -76,31 +66,34 @@ export function createApp(deps: FacilitatorDeps): express.Express {
     });
   });
 
-  /**
-   * A body we could not read is NOT a payment outcome. 400, no verdict.
-   * Classifying it would tell the payer their terms were refused when in
-   * fact we never understood the request.
-   */
-  function wireFailure(res: express.Response, err: unknown): boolean {
-    if (!(err instanceof WireError)) return false;
-    console.error(`[wire] malformed request: ${err.message}`);
-    res.status(400).json({ error: "malformed_request", message: err.message });
-    return true;
-  }
-
-  app.post("/verify", async (req, res) => {
-    try {
-      const { paymentPayload, paymentRequirements } = parseFacilitatorRequest(req.body);
+  app.post(
+    "/verify",
+    withBody(facilitatorRequestSchema, async (_req, res, body) => {
+      const { paymentPayload, paymentRequirements } = body;
       const id = attemptId(paymentPayload);
-      const result = await facilitator.verify(paymentPayload, paymentRequirements);
+      // Bound once. Every line this request produces carries attemptId,
+      // which is what makes verify and settle a JOIN rather than two
+      // lines that happen to look alike.
+      const log = logger.child({ attemptId: id });
 
+      // ── ANSWER: valid or not. Either way the SDK RETURNS.
+      //
       // Verify never broadcasts, so there is never a signature here, and
       // classify decides on arithmetic alone: past the deadline -> expired
       // and safe to re-sign; inside it -> rejected on the merits.
       //
-      // KNOWN LIMIT: "AlreadyProcessed" lands in `rejected`, the SAFE answer
+      // KNOWN LIMIT: "AlreadyProcessed" lands in rejected — the SAFE answer
       // (do not retry) but not the TRUE one (the money already moved).
       // Telling those apart needs a ledger keyed by request (D10).
+      // Tell the handler WHICH END broke. Without this an SDK failure is
+      // anonymous and answers 500 — "we have a bug" — when the truth is
+      // "our dependency is down and your request was fine".
+      const result = await facilitator
+        .verify(paymentPayload, paymentRequirements)
+        .catch((e: unknown) => {
+          throw new UpstreamError("facilitator verify failed", e);
+        });
+
       const verdict = result.isValid
         ? classifyPass("verify")
         : classify({
@@ -113,96 +106,111 @@ export function createApp(deps: FacilitatorDeps): express.Express {
             refusalKind: "terms",
           });
 
-      console.log(
-        result.isValid
-          ? `[verify ${id}] VALID`
-          : `[verify ${id}] INVALID ${result.invalidReason ?? ""} ${result.invalidMessage ?? ""} -> ${verdict.state}`,
+      log.info(
+        {
+          phase: "verify",
+          isValid: result.isValid,
+          invalidReason: result.invalidReason,
+          state: verdict.state,
+        },
+        result.isValid ? "verified" : "verification refused",
       );
 
       res.json({ ...result, extra: { ...result.extra, stipend: verdict } });
-    } catch (err) {
-      if (wireFailure(res, err)) return;
-      console.error("[verify] threw:", err instanceof Error ? err.message : err);
-      res.status(502).json({
-        isValid: false,
-        invalidReason: "facilitator_error",
-        invalidMessage: err instanceof Error ? err.message : String(err),
-      });
-    }
-  });
 
-  app.post("/settle", async (req, res) => {
-    let parsed;
-    try {
-      parsed = parseFacilitatorRequest(req.body);
-    } catch (err) {
-      if (wireFailure(res, err)) return;
-      throw err;
-    }
-    const { paymentPayload, paymentRequirements } = parsed;
+      // ── ACCIDENT: no catch. A throw here is our dependency failing, and
+      //    the global handler answers 502 — the request was fine, we were
+      //    not, and the status says which end broke.
+    }),
+  );
 
-    // Derived from the signed transaction, so /verify computed the same id
-    // for this attempt without anything being passed between the two calls.
-    const id = attemptId(paymentPayload);
+  app.post(
+    "/settle",
+    withBody(facilitatorRequestSchema, async (_req, res, body) => {
+      const { paymentPayload, paymentRequirements } = body;
+      const id = attemptId(paymentPayload);
+      const log = logger.child({ attemptId: id });
+      const lastValidBlockHeight = deadlineOf(paymentRequirements);
 
-    // One source for the deadline, shared by the returned and thrown paths.
-    const lastValidBlockHeight = deadlineOf(paymentRequirements);
+      const reply = async (args: {
+        ok: boolean;
+        signature: string;
+        refusalKind?: "policy" | "terms" | undefined;
+        errorText?: string | undefined;
+        base: Record<string, unknown>;
+      }) => {
+        const verdict = classify({
+          phase: "settle",
+          ok: args.ok,
+          signature: args.signature,
+          errorText: args.errorText,
+          lastValidBlockHeight,
+          currentBlockHeight: await chain.getBlockHeight(),
+          refusalKind: args.refusalKind,
+        });
+        // Fields, not a sentence: the ledger will key on exactly these.
+        log.info(
+          {
+            phase: "settle",
+            state: verdict.state,
+            resignable: verdict.resignable,
+            retryableLater: verdict.retryableLater,
+            // Truncated: a broadcast signature is public, but the full
+            // string is already in msg and 88 chars twice per line is
+            // noise. 12 is enough to find it on an explorer.
+            signature: args.signature ? args.signature.slice(0, 12) : undefined,
+          },
+          verdict.reason,
+        );
+        res.json({ ...args.base, extra: { ...(args.base["extra"] ?? {}), stipend: verdict } });
+      };
 
-    const reply = async (args: {
-      ok: boolean;
-      signature: string;
-      errorText?: string | undefined;
-      base: Record<string, unknown>;
-    }) => {
-      const verdict = classify({
-        phase: "settle",
-        ok: args.ok,
-        signature: args.signature,
-        errorText: args.errorText,
-        lastValidBlockHeight,
-        currentBlockHeight: await chain.getBlockHeight(),
-        refusalKind: policyVeto ? "policy" : args.signature ? undefined : "terms",
-      });
-      console.log(
-        `[settle ${id}] ${verdict.state} resignable=${verdict.resignable} ` +
-          `retryableLater=${verdict.retryableLater} — ${verdict.reason}`,
-      );
-      res.json({
-        ...args.base,
-        extra: { ...(args.base["extra"] ?? {}), stipend: verdict },
-      });
-    };
+      // ── ANSWER: policy says no. A branch, not an exception.
+      //    refusalKind comes from the decision itself, three lines above the
+      //    use — there is nothing stored in between that another request
+      //    could overwrite. That is why policyVeto is deleted, not fixed.
+      const decision = decide(amountOf(paymentRequirements), policy);
+      log.debug({ amount: paymentRequirements.amount, asset: paymentRequirements.asset }, "policy check");
+      if (!decision.allowed) {
+        // warn, not error: expected behaviour, but notable.
+        log.warn({ reason: decision.reason }, "policy veto");
+        return reply({
+          ok: false,
+          signature: "",
+          refusalKind: "policy",
+          errorText: decision.reason,
+          base: {
+            success: false,
+            errorReason: "policy_abort",
+            errorMessage: decision.reason,
+            transaction: "",
+            network: paymentRequirements.network,
+          },
+        });
+      }
 
-    try {
-      const result = await facilitator.settle(paymentPayload, paymentRequirements);
-      // transaction is a REQUIRED string in @x402/core, so a refusal that
-      // never broadcast arrives as "". classify normalises that.
-      await reply({
+      // ── ANSWER: the SDK settled, or did not. Either way it RETURNED.
+      const result = await facilitator
+        .settle(paymentPayload, paymentRequirements)
+        .catch((e: unknown) => {
+          throw new UpstreamError("facilitator settle failed", e);
+        });
+      return reply({
         ok: result.success,
         signature: result.transaction,
+        refusalKind: result.transaction ? undefined : "terms",
         errorText: result.errorMessage ?? result.errorReason,
         base: { ...result },
       });
-    } catch (err) {
-      // A policy abort THROWS here (x402Facilitator.ts:418) rather than
-      // returning success:false. It is a legitimate outcome, not a crash, and
-      // must carry the same structured verdict as every other path, or
-      // retryableLater is invisible exactly when it matters.
-      console.error("[settle] threw:", err instanceof Error ? err.message : err);
-      await reply({
-        ok: false,
-        signature: "",
-        errorText: err instanceof Error ? err.message : String(err),
-        base: {
-          success: false,
-          errorReason: policyVeto ? "policy_abort" : "settle_threw",
-          errorMessage: err instanceof Error ? err.message : String(err),
-          transaction: "",
-          network: paymentRequirements["network"],
-        },
-      });
-    }
-  });
+
+      // ── ACCIDENT: no catch. Both answers are returns above, so anything
+      //    thrown here is infrastructure or a bug. Express 5 forwards the
+      //    rejection to the error middleware for us.
+    }),
+  );
+
+  // Registered LAST, after every route.
+  app.use(errorHandler(logger));
 
   return app;
 }

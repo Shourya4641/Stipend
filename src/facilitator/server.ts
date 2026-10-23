@@ -9,8 +9,18 @@ import { loadOrCreateSigner } from "../shared/keys";
 import { createChain } from "../shared/chain";
 import { loadConfig } from "./config";
 import { createApp } from "./app";
+import { createLogger } from "../shared/logger";
+import { exitOnFatal } from "../shared/http";
+
+exitOnFatal();
 
 const config = loadConfig();
+const logger = createLogger({
+  service: "facilitator",
+  // Pretty in dev, JSON in production. The entrypoint opts in; the app
+  // defaults to silent so tests are quiet.
+  pretty: process.env["NODE_ENV"] !== "production",
+});
 const chain = createChain(config.chain);
 
 // The ONLY wallet in Stipend that holds SOL. It never holds USDC and never
@@ -35,6 +45,6 @@ const facilitator = new x402Facilitator();
 //   or scheme options; we build the scheme by hand when we need those.
 registerExactSvmScheme(facilitator, { signer, networks: SOLANA_DEVNET_CAIP2 });
 
-createApp({ facilitator, chain }).listen(config.port, () => {
-  console.log(`facilitator on :${config.port}, fee payer ${feePayerKeypair.address}`);
+createApp({ facilitator, chain, logger }).listen(config.port, () => {
+  logger.info({ port: config.port, feePayer: feePayerKeypair.address }, "facilitator listening");
 });

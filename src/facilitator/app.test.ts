@@ -2,6 +2,8 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
 import { createApp, type FacilitatorCore } from "./app";
+import { toAtomic } from "../shared/amount";
+import { USDC_DECIMALS } from "../shared/chain-constants";
 
 /**
  * Route tests with a stub facilitator and a fake chain.
@@ -118,7 +120,11 @@ describe("POST /verify", () => {
     // end broke (D4).
     const app = appWith({ verify: (async () => { throw new Error("rpc down"); }) as never });
     const res = await request(app).post("/verify").send(body()).expect(502);
-    assert.equal(res.body.invalidReason, "facilitator_error");
+    assert.equal(res.body.error, "upstream_unavailable");
+    // The global handler answers now, so the body is the generic upstream
+    // shape rather than a verify-specific one. Deliberate: an infrastructure
+    // failure is not a payment outcome and must not look like one.
+    assert.equal(res.body.extra?.stipend, undefined);
   });
 });
 
@@ -128,44 +134,37 @@ describe("POST /settle", () => {
     assert.equal(res.body.extra.stipend.state, "confirmed");
   });
 
-  test("settle THROWS -> still a structured verdict, never a 500", async () => {
-    // A policy abort throws out of settle() (x402Facilitator.ts:418). It is
-    // an outcome, not a crash, and must carry a verdict or retryableLater is
-    // invisible exactly when it matters.
-    const app = appWith({ settle: (async () => { throw new Error("Settlement aborted: cap"); }) as never });
-    const res = await request(app).post("/settle").send(body()).expect(200);
-    assert.equal(res.body.success, false);
-    assert.equal(res.body.extra.stipend.state, "rejected");
-    // Nothing broadcast, so the signature must stay empty — otherwise the
-    // verdict would read as pending and the payer could never retry.
-    assert.equal(res.body.transaction, "");
+  test("settle THROWS -> 502, because it is now an accident not an answer", async () => {
+    // Before D4 a throw from settle() was how the SDK reported a policy
+    // veto, so it had to produce a verdict. Now the route decides BEFORE
+    // calling settle, so a throw here is genuinely infrastructure failing —
+    // and a verdict would be a fabrication.
+    const app = appWith({ settle: (async () => { throw new Error("rpc exploded"); }) as never });
+    const res = await request(app).post("/settle").send(body()).expect(502);
+    assert.equal(res.body.error, "upstream_unavailable");
+    assert.equal(res.body.extra?.stipend, undefined);
   });
 
-  test("a POLICY veto is retryableLater; a malformed payment is not", async () => {
-    // These two are both success:false with no signature. The ONLY thing
-    // separating them is refusalKind, supplied by whoever refused — never
-    // parsed back out of the message. Getting this wrong tells an agent to
-    // give up on terms that would work in an hour.
-    //
-    // The stub registers a real onBeforeSettle, so policyVeto is set exactly
-    // as the live hook sets it.
-    let veto: ((a: { requirements: { amount: string; asset: string } }) => Promise<unknown>) | undefined;
+  test("a POLICY veto is retryableLater, and never reaches the chain", async () => {
+    // Driven the way production drives it: a cap the payment exceeds. No
+    // stub throws, no hook captured — the route decides and returns.
     const app = createApp({
       facilitator: stubFacilitator({
-        onBeforeSettle: ((fn: never) => { veto = fn; }) as never,
         settle: (async () => {
-          await veto?.({ requirements: { amount: "20000", asset: "USDC" } });
-          throw new Error("Settlement aborted: per-payment cap 10000 exceeded by 20000");
+          throw new Error("settle must not be called after a veto");
         }) as never,
       }),
       chain: chainAt(900n),
+      policy: { maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
     });
 
     const res = await request(app).post("/settle").send(body()).expect(200);
+    assert.equal(res.body.success, false);
+    assert.equal(res.body.errorReason, "policy_abort");
+    assert.equal(res.body.transaction, "", "nothing was broadcast");
     assert.equal(res.body.extra.stipend.state, "rejected");
     assert.equal(res.body.extra.stipend.resignable, false);
     assert.equal(res.body.extra.stipend.retryableLater, true, "policy refusals may lapse");
-    assert.match(res.body.extra.stipend.reason, /policy/);
   });
 
   test("success with NO signature -> pending, never confirmed", async () => {

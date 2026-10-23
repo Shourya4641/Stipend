@@ -25,13 +25,8 @@ import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { atomicFromString, type AtomicAmount } from "../shared/amount";
 import { USDC_DECIMALS } from "../shared/chain-constants";
 
-/** The request was not a well-formed request. NOT a payment outcome. */
-export class WireError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "WireError";
-  }
-}
+export { WireError } from "../shared/errors";
+import { WireError } from "../shared/errors";
 
 /**
  * Stands in for a deadline we were never given.
@@ -78,7 +73,11 @@ const payloadSchema = z.object({
   payload: z.record(z.unknown()),
 });
 
-const facilitatorRequestSchema = z.object({
+/**
+ * Exported so routes can hand it to withBody and get a typed body, rather
+ * than parsing inside the handler and re-deriving the type (D4).
+ */
+export const facilitatorRequestSchema = z.object({
   paymentPayload: payloadSchema,
   paymentRequirements: requirementsSchema,
 });

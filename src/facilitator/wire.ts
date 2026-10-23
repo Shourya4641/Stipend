@@ -1,45 +1,27 @@
 /**
- * Narrowing untrusted input from the network into the SDK's own types.
+ * Narrowing untrusted request bodies into the SDK's own types (D6).
  *
- * Everything the facilitator receives arrives as `any` from express.
- * Narrowing it in one place, with tests, is the difference between a
- * malformed request being REPORTED as malformed and it being misreported as
- * a refused payment.
+ * Express hands over `req.body: any`. Narrowing it in one tested place is
+ * what separates a malformed request being REPORTED as malformed from it
+ * being misreported as a refused payment — before this existed, a bad body
+ * threw inside the SDK, landed in the settle catch, and came back
+ * classified as rejected(terms).
  *
- * The functions here return @x402/core types, so no caller needs a cast.
- * A cast would put the hole straight back: it asserts a shape rather than
- * checking one.
+ * `unknown` appears at exactly one place per input: the signature that
+ * receives bytes off a socket. That is the honest type there and it forces
+ * narrowing. `unknown` past this boundary is a smell.
  *
- * No schema library: the shapes are small, and hand-written narrowing has no
- * dependency to pin, audit or upgrade.
+ * Types are INFERRED from the schemas, then checked with `satisfies`. The
+ * stricter `z.ZodType<PaymentRequirements>` annotation was rejected: it
+ * collapses input and output types, so anything with `.default()` or a
+ * transform stops compiling — it already broke env.ts, and the branded
+ * AtomicAmount in D11 is a transform. `satisfies` catches a field we
+ * REMOVED; a field the SDK ADDS is caught by an exhaustive test instead.
  */
 import { createHash } from "node:crypto";
+import { z } from "zod";
 import type { PaymentPayload, PaymentRequirements } from "@x402/core/types";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
-
-type Network = PaymentRequirements["network"];
-
-/**
- * Networks this facilitator will accept a request for.
- *
- * Also how `network` gets its type without a cast: `find` on a typed list
- * returns a typed element. And it is the right check anyway — /supported
- * advertises devnet only, so anything else is malformed, not unsupported.
- */
-export const ALLOWED_NETWORKS: readonly Network[] = [SOLANA_DEVNET_CAIP2];
-
-/**
- * Stands in for a deadline we were never given.
- *
- * Expiry is proven by `currentBlockHeight > lastValidBlockHeight`. With no
- * deadline, expiry is UNPROVABLE — so the sentinel is a height the chain can
- * never reach, keeping such a payment out of `expired` and on the safe side.
- * A 0n default would do the opposite: mark every payment expired and invite
- * the payer to pay again with no evidence the first one died.
- */
-export const NO_DEADLINE = 2n ** 64n;
-
-//! Suggestion - Type assertion checks across the project .. no use of unknown or any .. if used then should be justified.
 
 /** The request was not a well-formed request. NOT a payment outcome. */
 export class WireError extends Error {
@@ -49,103 +31,74 @@ export class WireError extends Error {
   }
 }
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-function str(v: unknown, field: string): string {
-  if (typeof v !== "string" || v.length === 0) {
-    throw new WireError(`${field} missing or not a non-empty string`);
-  }
-  return v;
-}
-
-function num(v: unknown, field: string): number {
-  if (typeof v !== "number" || !Number.isFinite(v)) {
-    throw new WireError(`${field} missing or not a finite number`);
-  }
-  return v;
-}
-
-function record(v: unknown, field: string): Record<string, unknown> {
-  if (!isRecord(v)) throw new WireError(`${field} missing or not an object`);
-  return v;
-}
+/**
+ * Stands in for a deadline we were never given.
+ *
+ * Expiry is proven by `currentBlockHeight > lastValidBlockHeight`. With no
+ * deadline it is UNPROVABLE, so this is a height the chain can never reach:
+ * such a payment stays out of `expired`, the safe side. A 0n default would
+ * mark every payment expired and invite paying again with no evidence the
+ * first one died.
+ */
+export const NO_DEADLINE = 2n ** 64n;
 
 /**
- * Atomic token amount: digits only, no sign, no decimal point.
- *
- * Strict here because the spend policy does BigInt(amount). If that throws
- * inside the onBeforeSettle hook, the SDK turns it into a settle failure and
- * the classifier reports a REFUSED PAYMENT when the truth is a malformed
- * request. Validating here is what makes decide()'s bigint parameter honest.
+ * Atomic token amount: digits only. Strict because the policy does
+ * BigInt(amount) — a throw inside onBeforeSettle becomes a settle failure,
+ * and the classifier then reports a REFUSED PAYMENT for a malformed request.
  */
-function atomicAmount(v: unknown, field: string): string {
-  const s = str(v, field);
-  if (!/^\d+$/.test(s)) {
-    throw new WireError(`${field} must be a decimal integer string, got ${JSON.stringify(s)}`);
-  }
-  return s;
-}
-
-function network(v: unknown, field: string): Network {
-  const s = str(v, field);
-  const found = ALLOWED_NETWORKS.find((n) => n === s);
-  if (!found) {
-    throw new WireError(`${field} ${JSON.stringify(s)} is not a network this facilitator accepts`);
-  }
-  return found;
-}
-
-export function parsePaymentRequirements(v: unknown, path = "paymentRequirements"): PaymentRequirements {
-  const r = record(v, path);
-  return {
-    scheme: str(r["scheme"], `${path}.scheme`),
-    network: network(r["network"], `${path}.network`),
-    asset: str(r["asset"], `${path}.asset`),
-    amount: atomicAmount(r["amount"], `${path}.amount`),
-    payTo: str(r["payTo"], `${path}.payTo`),
-    maxTimeoutSeconds: num(r["maxTimeoutSeconds"], `${path}.maxTimeoutSeconds`),
-    // Required on the SDK type, so absent is malformed — but an EMPTY extra
-    // is fine: a 402 without extra.recentBlockhash is unusual, not invalid.
-    extra: record(r["extra"], `${path}.extra`),
-  };
-}
-
-export function parsePaymentPayload(v: unknown, path = "paymentPayload"): PaymentPayload {
-  const p = record(v, path);
-  return {
-    x402Version: num(p["x402Version"], `${path}.x402Version`),
-    // Recursive: the terms the payer says they signed against get the same
-    // scrutiny as the terms the merchant is asking us to settle.
-    accepted: parsePaymentRequirements(p["accepted"], `${path}.accepted`),
-    payload: record(p["payload"], `${path}.payload`),
-  };
-}
+const atomicAmount = z
+  .string()
+  .regex(/^\d+$/, 'must be a decimal integer string, e.g. "1000"');
 
 /**
- * The deadline the payer signed against, from `extra.lastValidBlockHeight`.
- *
- * Returns NO_DEADLINE for anything it cannot read as a non-negative integer.
- * Never throws: a missing deadline is a normal condition, not a protocol
- * violation — a merchant with no rpcUrl configured simply doesn't send one.
+ * Only the network /supported advertises. Anything else is malformed, not
+ * merely unsupported — and z.literal gives `network` its type with no cast.
  */
-//! Suggestion - Across the entire project .. there are a few places like this where it looks we have over engineered it hence making it difficult to review and understand it. 
-export function deadlineOf(requirements: unknown): bigint {
-  if (!isRecord(requirements)) return NO_DEADLINE;
-  const extra = requirements["extra"];
-  if (!isRecord(extra)) return NO_DEADLINE;
+const network = z.literal(SOLANA_DEVNET_CAIP2);
 
-  const raw = extra["lastValidBlockHeight"];
-  if (typeof raw !== "string" && typeof raw !== "number" && typeof raw !== "bigint") {
-    return NO_DEADLINE;
-  }
-  try {
-    const d = BigInt(raw);
-    return d < 0n ? NO_DEADLINE : d;
-  } catch {
-    return NO_DEADLINE;
-  }
+const requirementsSchema = z.object({
+  scheme: z.string().min(1),
+  network,
+  asset: z.string().min(1),
+  amount: atomicAmount,
+  payTo: z.string().min(1),
+  // Required on the SDK type, so absent is malformed.
+  maxTimeoutSeconds: z.number().finite(),
+  // Required too — but an EMPTY extra is fine: a merchant with no rpcUrl
+  // configured simply sends no recentBlockhash.
+  extra: z.record(z.unknown()),
+});
+
+const payloadSchema = z.object({
+  x402Version: z.number().finite(),
+  accepted: requirementsSchema,
+  payload: z.record(z.unknown()),
+});
+
+const facilitatorRequestSchema = z.object({
+  paymentPayload: payloadSchema,
+  paymentRequirements: requirementsSchema,
+});
+
+function parse<S extends z.ZodTypeAny>(schema: S, value: unknown): z.infer<S> {
+  const r = schema.safeParse(value);
+  if (r.success) return r.data;
+  // zod gives field paths for free — the reason the hand-written version
+  // threaded a `path` argument through every function.
+  throw new WireError(
+    r.error.issues
+      .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+      .join("; "),
+  );
+}
+
+export function parsePaymentRequirements(v: unknown): PaymentRequirements {
+  return parse(requirementsSchema, v) satisfies PaymentRequirements;
+}
+
+export function parsePaymentPayload(v: unknown): PaymentPayload {
+  return parse(payloadSchema, v) satisfies PaymentPayload;
 }
 
 export type FacilitatorRequest = {
@@ -157,36 +110,45 @@ export type FacilitatorRequest = {
  * A /verify or /settle body, fully narrowed, or WireError.
  *
  * Throwing here, before any SDK call, is what keeps a malformed request out
- * of the settlement classifier. A body we cannot read is a 400 with no
- * verdict — not a refused payment carrying a verdict that claims the terms
- * were wrong.
+ * of the settlement classifier.
  */
 export function parseFacilitatorRequest(body: unknown): FacilitatorRequest {
-  const b = record(body, "body");
-  return {
-    paymentPayload: parsePaymentPayload(b["paymentPayload"]),
-    paymentRequirements: parsePaymentRequirements(b["paymentRequirements"]),
-  };
+  return parse(facilitatorRequestSchema, body) satisfies FacilitatorRequest;
+}
+
+/**
+ * The deadline the payer signed against.
+ *
+ * Never throws: a missing deadline is a normal condition, not a protocol
+ * violation. Separate from the schema because it is read from `extra`,
+ * which is deliberately untyped.
+ */
+export function deadlineOf(requirements: unknown): bigint {
+  const parsed = z
+    .object({ extra: z.object({ lastValidBlockHeight: z.union([z.string(), z.number()]) }) })
+    .safeParse(requirements);
+  if (!parsed.success) return NO_DEADLINE;
+  try {
+    const d = BigInt(parsed.data.extra.lastValidBlockHeight);
+    return d < 0n ? NO_DEADLINE : d;
+  } catch {
+    return NO_DEADLINE;
+  }
 }
 
 /**
  * A short, stable id for one payment ATTEMPT.
  *
- * Derived rather than supplied: both /verify and /settle receive the same
- * signed transaction, so both compute the same id with no header to pass
- * and nothing for the merchant to keep in sync. @x402/core's only header
- * hook (createAuthHeaders) is keyed by request path, not by payment, so it
- * cannot carry an id that spans the two calls.
+ * Derived, not supplied: @x402/core's only header hook (createAuthHeaders)
+ * is keyed by request PATH, not by payment, so a merchant using it would
+ * produce one id for /verify and another for /settle — exactly the link we
+ * wanted. Both endpoints receive the same signed transaction, so both
+ * compute the same id with nothing transmitted.
  *
- * Scope is deliberately one attempt. A retry after expiry is a DIFFERENT
- * transaction and gets a different id — correct, because it is a different
- * attempt. Linking attempts at the same purchase needs a request-level key
- * (resource + payer), which is the ledger's job, not this.
- *
- * Not security-relevant: it labels log lines. Truncated for readability.
+ * Scope is one attempt. A retry after expiry is a different transaction and
+ * gets a different id; linking attempts at one purchase is D10's job.
  */
 export function attemptId(payload: PaymentPayload): string {
   const tx = payload.payload["transaction"];
-  const basis = typeof tx === "string" ? tx : JSON.stringify(payload.payload);
-  return createHash("sha256").update(basis).digest("hex").slice(0, 8);
+  return createHash("sha256").update(String(tx)).digest("hex").slice(0, 8);
 }

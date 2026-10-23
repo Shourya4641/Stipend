@@ -1,3 +1,11 @@
+import {
+  Phase,
+  RefusalKind,
+  SettlementState,
+  PassState,
+} from "./enums";
+
+export { SETTLEMENT_STATES, RESIGNABLE_STATES } from "./enums";
 //! Have a separate file for the storing the enums and types for all the different services.
 /**
  * Settlement classification: did this payment reach the chain, and is it
@@ -8,16 +16,6 @@
  */
 
 //! Use enums
-export const SETTLEMENT_STATES = [
-  "rejected",
-  "expired",
-  "pending",
-  "confirmed",
-  "failed",
-] as const;
-
-export type SettlementState = (typeof SETTLEMENT_STATES)[number];
-
 export type Classification = {
   state: SettlementState;
   /** May the payer build and sign a NEW payment for this request, NOW? */
@@ -37,7 +35,7 @@ export type Classification = {
 
 export type ClassifyInput = {
   /** Which half of the protocol produced this outcome. */
-  phase: "verify" | "settle"; //! use enums
+  phase: Phase;
   /** Did that call report success? */
   ok: boolean;
   /** Transaction signature. Present ONLY once bytes were broadcast. */
@@ -57,7 +55,7 @@ export type ClassifyInput = {
    *   "terms"   — wrong by construction (bad amount, missing account)
    *   "unknown" — unattributed; treated as "terms", the safer default
    */
-  refusalKind?: "policy" | "terms" | "unknown" | undefined; //! use enums
+  refusalKind?: RefusalKind | undefined;
 };
 
 export function classify(input: ClassifyInput): Classification {
@@ -77,12 +75,20 @@ export function classify(input: ClassifyInput): Classification {
   // trusting every caller: an empty signature must never read as "broadcast".
   const sig = signature && signature.trim().length > 0 ? signature : undefined;
 
+  // Branches 1 and 2 require Settle; branch 3 requires a signature. So a
+  // verify outcome can only reach Expired or Rejected — Confirmed, Pending
+  // and Failed are unreachable by construction. Correct, but emergent:
+  // nothing stated it. A programmer error, so it throws (D4 class 4).
+  if (phase === Phase.Verify && sig) {
+    throw new Error("invariant: verify never broadcasts, so it cannot carry a signature");
+  }
+
   const expiredByHeight = currentBlockHeight > lastValidBlockHeight;
 
   // ---- 1. Success, with proof. -------------------------------------------
-  if (phase === "settle" && ok && sig) {
+  if (phase === Phase.Settle && ok && sig) {
     return {
-      state: "confirmed",
+      state: SettlementState.Confirmed,
       resignable: false,
       retryableLater: false,
       reason: `settled: ${sig}`,
@@ -93,9 +99,9 @@ export function classify(input: ClassifyInput): Classification {
   // A facilitator reporting success without a signature is misbehaving.
   // Treat it as broadcast-of-unknown-outcome rather than trusting it: the
   // expensive mistake is paying twice, not waiting.
-  if (phase === "settle" && ok && !sig) {
+  if (phase === Phase.Settle && ok && !sig) {
     return {
-      state: "pending",
+      state: SettlementState.Pending,
       resignable: false,
       retryableLater: false,
       reason: "settle reported success with no signature; outcome unknown",
@@ -111,7 +117,7 @@ export function classify(input: ClassifyInput): Classification {
   // AFTER broadcast does not make re-signing safe.
   if (sig) {
     return {
-      state: "pending",
+      state: SettlementState.Pending,
       resignable: false,
       retryableLater: false,
       reason: `broadcast ${sig}, outcome unknown${errorText ? `: ${errorText}` : ""}`,
@@ -124,7 +130,7 @@ export function classify(input: ClassifyInput): Classification {
   // safely authorise a fresh one.
   if (expiredByHeight) {
     return {
-      state: "expired",
+      state: SettlementState.Expired,
       resignable: true,
       retryableLater: false,
       reason: `chain at ${currentBlockHeight} is past lastValidBlockHeight ${lastValidBlockHeight}; nothing broadcast`,
@@ -138,9 +144,9 @@ export function classify(input: ClassifyInput): Classification {
   // A policy refusal may lapse; a malformed payment never will. Unattributed
   // refusals are treated as terms — the safe default is "do not retry".
   return {
-    state: "rejected",
+    state: SettlementState.Rejected,
     resignable: false,
-    retryableLater: refusalKind === "policy",
+    retryableLater: refusalKind === RefusalKind.Policy,
     reason: `${phase} refused within the validity window (${refusalKind ?? "unknown"})${errorText ? `: ${errorText}` : ""}`,
   };
 }
@@ -161,7 +167,7 @@ export function resolvePending(
 ): Classification {
   if (!onChain.landed) {
     return {
-      state: "pending",
+      state: SettlementState.Pending,
       resignable: false,
       retryableLater: false,
       reason: `${signature} not found on chain yet`,
@@ -169,13 +175,13 @@ export function resolvePending(
   }
   return onChain.errored
     ? {
-        state: "failed",
+        state: SettlementState.Failed,
         resignable: false,
         retryableLater: false,
         reason: `${signature} landed and errored`,
       }
     : {
-        state: "confirmed",
+        state: SettlementState.Confirmed,
         resignable: false,
         retryableLater: false,
         reason: `${signature} landed`,
@@ -190,15 +196,15 @@ export function resolvePending(
  * went wrong and is retrying safe", which is all `classify` answers.
  */
 export type PassVerdict = {
-  state: "verified" | "settled"; //! use enums
+  state: PassState;
   signature?: string | undefined;
 };
 
 export function classifyPass(
-  phase: "verify" | "settle", //! use enums
+  phase: Phase,
   signature?: string,
 ): PassVerdict {
-  return phase === "verify"
-    ? { state: "verified" }
-    : { state: "settled", signature };
+  return phase === Phase.Verify
+    ? { state: PassState.Verified }
+    : { state: PassState.Settled, signature };
 }

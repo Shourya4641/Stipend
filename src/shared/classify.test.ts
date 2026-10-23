@@ -130,7 +130,10 @@ describe("invariants", () => {
   // combination rather than argued: if a signature exists, re-signing is
   // never safe, whatever else is true.
   test("a signature ALWAYS forbids re-signing", () => {
-    for (const phase of ["verify", "settle"] as const) {
+    // Settle only: verify cannot carry a signature, and classify now throws
+    // on that combination rather than classifying it. Asserting over an
+    // impossible input was testing a case the system cannot produce.
+    for (const phase of ["settle"] as const) {
       for (const ok of [true, false]) {
         for (const height of [INSIDE, PAST]) {
           for (const errorText of [undefined, "BlockhashNotFound", "InvalidAccountData"]) {
@@ -151,6 +154,23 @@ describe("invariants", () => {
         }
       }
     }
+  });
+
+  test("verify + a signature is a programmer error, not a verdict", () => {
+    // Enforces what branch ordering only implied. If a caller ever passes a
+    // signature from the verify path, something upstream is miswired and a
+    // thrown invariant surfaces it instead of inventing a classification.
+    assert.throws(
+      () =>
+        classify({
+          phase: "verify",
+          ok: false,
+          signature: "sig",
+          lastValidBlockHeight: DEADLINE,
+          currentBlockHeight: INSIDE,
+        }),
+      /verify never broadcasts/,
+    );
   });
 
   test("resignable implies nothing was broadcast", () => {

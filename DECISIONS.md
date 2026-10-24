@@ -865,3 +865,62 @@ mapping is local only and does not leak into deployment.
 compose pins postgres:17 while the local install is 18. Match them if
 DATABASE_URL is ever pointed at the native instance, or you are testing
 against a different major than you deploy.
+
+---
+
+## D17 — The ledger: schema, writes, and why pending counts as spent
+
+### Ordering rule
+
+`recordIntent()` runs BEFORE the broadcast; everything else after. A missing
+row means we definitely did not broadcast; a `pending` row means we might
+have, and must be reconciled rather than re-signed. Possible only because
+the facilitator is the fee payer, so the txid — its own first signature — is
+known before sending.
+
+### Schema decisions
+
+- `amount` is `numeric(39,0)` with `mode:"bigint"`, NOT Postgres `bigint`:
+  int8 is SIGNED, so a u64 near its maximum overflows silently.
+- The state CHECK is built from `SETTLEMENT_STATES` with `sql.raw`, because
+  DDL cannot take bound parameters — a plain template emits `$1` and the
+  constraint becomes meaningless. Verified in the generated SQL.
+- The payment-id unique index is PARTIAL (`where payment_id is not null`),
+  or the second payment without an identifier would collide with the first.
+- `updated_at` is a TRIGGER (migration 0001, hand-written — Drizzle cannot
+  express one). The application version is one forgotten UPDATE away from
+  lying and cannot cover raw SQL at all, and this table is the audit record.
+- `request_fingerprint` is computed from day one rather than placeholdered:
+  a column full of `"placeholder"` would make D10's "same id, different
+  terms" check silently match everything against everything.
+
+### `resolve()` — the row count IS the answer
+
+`UPDATE ... WHERE id = $1 AND state = 'pending'` returning zero rows means
+another writer resolved it first, and this caller must NOT proceed as though
+it won. Uses `.returning().length` rather than the driver's row count:
+typed, and identical on PGlite in tests.
+
+### spentSince counts PENDING as spent
+
+A pending payment might have landed, and a limit that ignores "might have"
+is one a crash-and-retry cycle walks through.
+
+**The consequence, which is the interesting half:** a payment that never
+landed HOLDS BUDGET until the reconciler clears it. The reconciler is
+therefore not bookkeeping — it is what RELEASES spending capacity. If it
+stops, agents silently run out of budget they never spent, and the limit
+ratchets permanently downward on every failure.
+
+### Errors
+
+Drizzle 0.44+ wraps driver errors in `DrizzleQueryError`, so a Postgres
+unique violation is `err.cause.code === "23505"`, not `err.code`. Code
+copied from older examples reads the wrong property and silently never
+matches.
+
+### Tests
+
+PGlite runs the REAL migrations in-process — the actual constraints and the
+actual trigger, not a hand-written approximation that can drift from what
+production applies. 22 tests in ~3.5s.

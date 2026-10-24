@@ -811,3 +811,57 @@ Also in this file:
     commitment**. A lagging or forked node reporting `confirmed` height could
     say the deadline has passed when it has not, marking a live payment
     expired and inviting a second payment.
+
+---
+
+## D16 — The reviewer's path: compose runs everything, and the wallet is the real obstacle
+
+### Docker does not remove the database, it supplies one
+
+Worth stating plainly so nobody claims otherwise: `docker compose up` starts a
+real Postgres in a container and hands the app a DATABASE_URL pointing at it.
+There is still a connection. What changes is the instructions:
+
+without: install Postgres -> create role -> create database -> set
+DATABASE_URL -> run migrations -> run three services
+with: docker compose up
+
+
+### Compose runs the services too — IN SCOPE before submission
+
+Today compose starts Postgres only, so a reviewer still needs pnpm, an
+install, a .env, generated keys and three terminals. Three more entries,
+each a `build:` of this repo, plus depends_on with the Postgres healthcheck
+and a one-shot migration step.
+
+Deferred until the services stop changing — rebuilding images on every edit
+would slow development for no gain. Do it in the deployment stage.
+
+### The wallet is the obstacle Docker cannot fix
+
+No amount of containerising removes "go to Circle's faucet and request
+devnet USDC". A judge who has to fund a wallet before seeing anything will
+not see anything.
+
+**Chosen: a "run a payment" control on the dashboard**, triggering a
+server-side agent with its own small capped wallet. The judge clicks and
+watches a ledger row appear and resolve. No wallet, no CLI, no faucet.
+
+Rejected: shipping a pre-funded demo key in the repo. Simpler, and someone
+drains it on day one — and a public key with real devnet USDC in a public
+repo is exactly the kind of thing that looks careless to a judge even before
+it is emptied.
+
+This is why the dashboard matters more than it appears: it is not decoration,
+it is the only path by which a reviewer experiences the project working.
+
+### Local Postgres note
+
+A native PostgreSQL 18 (apt, enabled at boot) already owns 127.0.0.1:5432 on
+the dev machine, so compose publishes 5433 on the host. Inside the compose
+network the port is still 5432, and on Railway it is 5432 again — the 5433
+mapping is local only and does not leak into deployment.
+
+compose pins postgres:17 while the local install is 18. Match them if
+DATABASE_URL is ever pointed at the native instance, or you are testing
+against a different major than you deploy.

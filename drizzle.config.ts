@@ -6,8 +6,8 @@ export default defineConfig({
   schema: "./src/facilitator/db/schema.ts",
   out: "./drizzle",
   dbCredentials: { url: process.env["DATABASE_URL"] ?? "" },
-  // Prompt before anything destructive. We generate and commit migrations;
-  // `push` is never used against a shared database.
+  // Migrations are generated and committed. `push` is never used against a
+  // shared database — strict prompts before anything destructive.
   strict: true,
   verbose: true,
 });

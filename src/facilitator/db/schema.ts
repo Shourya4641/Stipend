@@ -19,6 +19,7 @@ import {
   bigint,
   check,
   index,
+  integer,
   jsonb,
   numeric,
   pgTable,
@@ -26,7 +27,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { SETTLEMENT_STATES } from "../../shared/enums";
+import { SETTLEMENT_STATES, SettlementState } from "../../shared/enums";
 
 export const settlements = pgTable(
   "settlements",
@@ -36,7 +37,11 @@ export const settlements = pgTable(
     // ── identity ─────────────────────────────────────────────────────────
     /** Client-generated, one per logical purchase. Survives a re-sign (D10). */
     paymentId: text("payment_id"),
-    /** sha256 of the canonical terms. Same id + different terms = 409. */
+    /**
+     * sha256 of the canonical terms (scheme, network, asset, amount, payTo,
+     * resource). Computed from day one — D10 later adds the COMPARISON
+     * ("same payment id, different terms -> 409"), not the value.
+     */
     requestFingerprint: text("request_fingerprint").notNull(),
     /** What was bought. The merchant's view, for the dashboard. */
     resourceUrl: text("resource_url"),
@@ -48,8 +53,8 @@ export const settlements = pgTable(
     payTo: text("pay_to").notNull(),
     /**
      * numeric(39,0), not bigint. Postgres `bigint` is SIGNED int8, so a u64
-     * near its maximum overflows it silently. 39 digits covers any u128.
-     * mode:"bigint" maps through BigInt/String, so no customType is needed.
+     * near its maximum overflows silently. mode:"bigint" maps through
+     * BigInt/String, so no customType is needed.
      */
     amount: numeric("amount", { precision: 39, scale: 0, mode: "bigint" }).notNull(),
 
@@ -65,12 +70,16 @@ export const settlements = pgTable(
     lastValidBlockHeight: bigint("last_valid_block_height", { mode: "bigint" }).notNull(),
 
     // ── outcome ──────────────────────────────────────────────────────────
-    state: text("state", { enum: SETTLEMENT_STATES }).notNull().default("pending"),
+    state: text("state", { enum: SETTLEMENT_STATES })
+      .notNull()
+      .default(SettlementState.Pending),
     chainSlot: bigint("chain_slot", { mode: "bigint" }),
     chainError: jsonb("chain_error"),
-    attempts: bigint("attempts", { mode: "number" }).notNull().default(0),
+    /** A retry counter. Single digits — integer, not bigint. */
+    attempts: integer("attempts").notNull().default(0),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Maintained by a trigger (see migration 0001). Never set by hand. */
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   },
@@ -92,18 +101,21 @@ export const settlements = pgTable(
     /** Cumulative spend per payer per window — the actual spend limit. */
     index("settlements_payer_time_idx").on(t.payer, t.createdAt),
 
+    /** The dashboard's main query: the most recent settlements. */
+    index("settlements_created_at_idx").on(t.createdAt),
+
     /**
      * text({ enum }) narrows the TYPE only — it does not check at runtime.
-     * This is the database half, built from the same array so the two
-     * cannot drift. sql.raw because DDL cannot take bound parameters: a
-     * plain ${} would emit $1 and fail.
+     * This is the database half, built from the same array so the two cannot
+     * drift. sql.raw because DDL cannot take bound parameters: a plain ${}
+     * would emit $1 and the constraint would be meaningless.
      */
     check(
       "settlements_state_check",
       sql`${t.state} in (${sql.raw(SETTLEMENT_STATES.map((s) => `'${s}'`).join(", "))})`,
     ),
 
-    /** Amounts are unsigned. The type permits 39 digits; the domain does not. */
+    /** Amounts are unsigned. The column type permits 39 digits; the domain does not. */
     check("settlements_amount_unsigned", sql`${t.amount} >= 0`),
   ],
 );

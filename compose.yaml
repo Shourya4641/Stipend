@@ -1,19 +1,38 @@
-# A judge should be able to run this project without my cloud account.
+# Postgres for local development, and the path a reviewer takes.
+#
 #   docker compose up -d
-#   DATABASE_URL=postgres://stipend:stipend@127.0.0.1:5432/stipend pnpm db:migrate
+#   pnpm db:migrate
+#
+# Services are NOT here yet (D16): they still change every session and
+# rebuilding images on each edit would slow development for no gain. They
+# join before submission, so `docker compose up` starts everything.
+#
+# Postgres 18 to match the version commonly installed by apt, so the
+# container and a native install are not different majors.
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: stipend
       POSTGRES_PASSWORD: stipend
       POSTGRES_DB: stipend
-    ports: ["5432:5432"]
-    volumes: ["stipend-pg:/var/lib/postgresql/data"]
+    ports:
+      # host:container. Inside the compose network it is always 5432, and on
+      # Railway it is 5432 too — the host mapping is local only.
+      - "5432:5432"
+    volumes:
+      # 18+ wants the mount at /var/lib/postgresql, NOT .../data: the data
+      # lives in a major-version subdirectory so pg_upgrade --link can work
+      # without crossing a mount boundary. The old path makes 18 refuse to
+      # start. See docker-library/postgres#1259.
+      - stipend-pg:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U stipend"]
+      # depends_on: condition: service_healthy needs this once the services
+      # join: a container that is "running" is not yet accepting connections.
+      test: ["CMD-SHELL", "pg_isready -U stipend -d stipend"]
       interval: 2s
       timeout: 3s
       retries: 20
+
 volumes:
   stipend-pg:

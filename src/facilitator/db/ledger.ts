@@ -26,7 +26,7 @@ export type IntentInput = {
   asset: string;
   payTo: string;
   amount: AtomicAmount;
-  txSignature: string;
+  messageHash: string;
   signedTx: string;
   lastValidBlockHeight: bigint;
 };
@@ -34,7 +34,7 @@ export type IntentInput = {
 /** A duplicate the unique indexes caught: this purchase already settled. */
 export class DuplicatePayment extends Error {
   constructor(readonly existing: SettlementRow) {
-    super(`already settled: ${existing.txSignature} (${existing.state})`);
+    super(`already settled: ${existing.messageHash} (${existing.state})`);
     this.name = "DuplicatePayment";
   }
 }
@@ -60,7 +60,7 @@ export function createLedger(db: Db) {
         const code = (err as { cause?: { code?: string } }).cause?.code;
         if (code !== "23505") throw err;
 
-        const existing = await this.bySignature(input.network, input.txSignature);
+        const existing = await this.byMessageHash(input.network, input.messageHash);
         if (existing) throw new DuplicatePayment(existing);
 
         if (input.paymentId) {
@@ -85,12 +85,18 @@ export function createLedger(db: Db) {
     async resolve(
       id: bigint,
       state: Exclude<State, "pending">,
-      outcome: { chainSlot?: bigint | undefined; chainError?: unknown } = {},
+      outcome: {
+        /** Learned from settle(). Null means nothing was broadcast. */
+        txSignature?: string | undefined;
+        chainSlot?: bigint | undefined;
+        chainError?: unknown;
+      } = {},
     ): Promise<boolean> {
       const rows = await db
         .update(settlements)
         .set({
           state,
+          txSignature: outcome.txSignature ?? null,
           chainSlot: outcome.chainSlot ?? null,
           chainError: outcome.chainError ?? null,
           resolvedAt: new Date(),
@@ -136,6 +142,15 @@ export function createLedger(db: Db) {
         .where(eq(settlements.state, SettlementState.Pending))
         .orderBy(settlements.createdAt)
         .limit(limit);
+    },
+
+    async byMessageHash(network: string, messageHash: string): Promise<SettlementRow | undefined> {
+      const [row] = await db
+        .select()
+        .from(settlements)
+        .where(and(eq(settlements.network, network), eq(settlements.messageHash, messageHash)))
+        .limit(1);
+      return row;
     },
 
     async bySignature(network: string, txSignature: string): Promise<SettlementRow | undefined> {

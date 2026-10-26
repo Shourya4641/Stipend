@@ -59,8 +59,18 @@ export const settlements = pgTable(
     amount: numeric("amount", { precision: 39, scale: 0, mode: "bigint" }).notNull(),
 
     // ── the transaction ──────────────────────────────────────────────────
-    /** Known BEFORE broadcast: it is the fee payer's own signature. */
-    txSignature: text("tx_signature").notNull(),
+    /**
+     * The payment's identity BEFORE it is broadcast: sha256 of the compiled
+     * transaction message. The message is everything except signatures, so
+     * it is fixed the moment the agent builds the transaction — unlike the
+     * txid, which is the fee payer's signature and appears inside settle().
+     */
+    messageHash: text("message_hash").notNull(),
+    /**
+     * NULLABLE: unknown at insert, filled in when settle() returns. A row
+     * with a null signature is one we may or may not have broadcast.
+     */
+    txSignature: text("tx_signature"),
     /**
      * The signed bytes, so a pending transaction can be rebroadcast if it
      * never reached a validator. NULLed once the row resolves — it is the
@@ -84,8 +94,21 @@ export const settlements = pgTable(
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   },
   (t) => [
-    /** The same signed bytes can never settle twice. */
-    uniqueIndex("settlements_signature_uq").on(t.network, t.txSignature),
+    /**
+     * The duplicate guard that fires AT INSERT, before anything is sent.
+     * This is the one that prevents double payment.
+     */
+    uniqueIndex("settlements_message_hash_uq").on(t.network, t.messageHash),
+
+    /**
+     * Kept as a second guard, now PARTIAL because the column is nullable.
+     * It can no longer fire at insert, but it catches two different
+     * messages somehow landing the same on-chain signature — which should
+     * be impossible and would be serious if it happened.
+     */
+    uniqueIndex("settlements_signature_uq")
+      .on(t.network, t.txSignature)
+      .where(sql`${t.txSignature} is not null`),
 
     /**
      * One settlement per logical purchase (D10). PARTIAL, because rows with

@@ -15,6 +15,13 @@
       "when": 1792829600776,
       "tag": "0001_updated_at_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793001578620,
+      "tag": "0002_spicy_dorian_gray",
+      "breakpoints": true
     }
   ]
 }

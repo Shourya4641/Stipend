@@ -31,7 +31,14 @@ export function createDb(url: string) {
  * let two run concurrently against different connections.
  */
 export async function runMigrations(url: string): Promise<void> {
-  const client = postgres(url, { max: 1 });
+  const client = postgres(url, {
+    max: 1,
+    // The migrator runs CREATE ... IF NOT EXISTS on its own bookkeeping
+    // table, so Postgres emits a NOTICE on every boot after the first.
+    // postgres.js prints notices to stdout by default; swallowing them
+    // keeps the console meaningful, which is where real problems appear.
+    onnotice: () => {},
+  });
   try {
     await migrate(drizzle({ client }), { migrationsFolder: "./drizzle" });
   } finally {

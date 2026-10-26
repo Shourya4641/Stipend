@@ -2,6 +2,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
 import { createApp, type FacilitatorCore } from "./app";
+import { DuplicatePayment, type Ledger } from "./db/ledger";
 import { toAtomic } from "../shared/amount";
 import { USDC_DECIMALS } from "../shared/chain-constants";
 
@@ -33,7 +34,9 @@ const body = (over: Record<string, unknown> = {}) => ({
   paymentPayload: {
     x402Version: 2,
     accepted: reqs(over),
-    payload: { transaction: "AgAAsigned-bytes" },
+    // A REAL devnet transaction: the route decodes this now, so a
+    // placeholder makes every settle test a 400.
+    payload: { transaction: "AgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC39dj5MymjwZ2IBjOt5c1c5vV9cwZGgqQjbhrnUn55HTBLcWL/cvyotP/04yokxHDHuMpr6z5rpHWmaVI+HfwMgAIBBAgODz6doOog1Rb6k72mD0p2QMvhoG+aDkOf+5xfuxzH/3ixmfFwQP90FCamraLZ6VlN0i6+1P6P67tlL+NA5iuOWWVjmc5ywe5NR6j+O9wY2jP+NJfk0s/8J/4fp/eghA8IwtI59CuVHN2wlYTWUVSX5T8TKNNCPVxCe9YvhecodTtELLORIVfxOpM9ATQoLQMrX/7NAaLb8bd5BgjfAC6nAwZGb+UhFzL/7K26csOb57yM5bvF9xJrLEObOkAAAAAFSlNamSkhBk0k6HFg2jh8fDW13bySu4HkH6hAQQVEjQbd9uHXZaGT2cvhRs7reawctIXtX1s3kTqM9YV+/wCpsdlN9+x0yg9CRdqR2jVr+pvsVxoVKMQ/xxGdT67CStwEBQAFAiBOAAAFAAkDAQAAAAAAAAAHBAMEAgEKDOgDAAAAAAAABgYAIDc1MmQxMWM2ZDI3NDQ0NTgwOTcwNzdlNDY0NDQ5ODhhAA==" },
   },
   paymentRequirements: reqs(over),
 });
@@ -61,8 +64,42 @@ function stubFacilitator(over: Partial<FacilitatorCore> = {}): FacilitatorCore {
   };
 }
 
-const appWith = (over: Partial<FacilitatorCore> = {}, height = 900n) =>
-  createApp({ facilitator: stubFacilitator(over), chain: chainAt(height) });
+/**
+ * A stub ledger that RECORDS ITS CALLS.
+ *
+ * The real thing is proven against real migrations in ledger.test.ts, so
+ * these tests only need to show the route uses it correctly — and the
+ * property that matters is ORDER: recordIntent must happen before settle,
+ * because a row written afterwards cannot protect a crash in between.
+ */
+function stubLedger(over: Partial<Ledger> = {}) {
+  const calls: string[] = [];
+  const stub = {
+    calls,
+    recordIntent: async () => {
+      calls.push("recordIntent");
+      return { id: 1n, state: "pending", txSignature: null } as never;
+    },
+    resolve: async () => {
+      calls.push("resolve");
+      return true;
+    },
+    noteBroadcast: async () => {
+      calls.push("noteBroadcast");
+    },
+    spentSince: async () => 0n,
+    pending: async () => [],
+    byMessageHash: async () => undefined,
+    bySignature: async () => undefined,
+    byPaymentId: async () => undefined,
+    recent: async () => [],
+    ...over,
+  };
+  return stub as unknown as Ledger & { calls: string[] };
+}
+
+const appWith = (over: Partial<FacilitatorCore> = {}, height = 900n, ledger = stubLedger()) =>
+  createApp({ facilitator: stubFacilitator(over), chain: chainAt(height), ledger });
 
 describe("GET /supported", () => {
   test("advertises devnet only", async () => {
@@ -155,6 +192,7 @@ describe("POST /settle", () => {
         }) as never,
       }),
       chain: chainAt(900n),
+      ledger: stubLedger(),
       policy: { maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
     });
 
@@ -209,5 +247,112 @@ describe("verify and settle agree on the attempt id", () => {
     const s = await request(app).post("/settle").send(body()).expect(200);
     assert.ok(v.body.extra.stipend);
     assert.ok(s.body.extra.stipend.reason.includes("5T3Ttj"));
+  });
+});
+
+describe("the ledger and the ordering rule", () => {
+  test("recordIntent happens BEFORE settle", async () => {
+    // The property the whole design turns on. A row written after the
+    // broadcast cannot protect a crash in between — which is the window
+    // where money goes missing.
+    const ledger = stubLedger();
+    const app = appWith({}, 900n, ledger);
+    await request(app).post("/settle").send(body()).expect(200);
+    assert.deepEqual(ledger.calls, ["recordIntent", "resolve"]);
+  });
+
+  test("a ledger failure means NOTHING is broadcast", async () => {
+    // The reason the facilitator is now less available than it was:
+    // Postgres down returns 502 rather than settling into no record. The
+    // stub below fails the test if settle is reached at all.
+    const ledger = stubLedger({
+      recordIntent: async () => {
+        throw new Error("ECONNREFUSED 127.0.0.1:5432");
+      },
+    });
+    const app = createApp({
+      facilitator: stubFacilitator({
+        settle: (async () => {
+          throw new Error("settle must not be called when the ledger is down");
+        }) as never,
+      }),
+      chain: chainAt(900n),
+      ledger,
+    });
+
+    const res = await request(app).post("/settle").send(body()).expect(502);
+    assert.equal(res.body.error, "upstream_unavailable");
+    // An accident, not a payment outcome — no verdict is attached.
+    assert.equal(res.body.extra?.stipend, undefined);
+  });
+
+  test("a POLICY VETO writes no row at all", async () => {
+    // Nothing was broadcast, so there is nothing to record — and a ledger
+    // full of refusals would inflate spentSince, tightening a cap that was
+    // never actually spent against.
+    const ledger = stubLedger();
+    const app = createApp({
+      facilitator: stubFacilitator(),
+      chain: chainAt(900n),
+      ledger,
+      policy: { maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
+    });
+
+    await request(app).post("/settle").send(body()).expect(200);
+    assert.deepEqual(ledger.calls, [], "the veto happens before the ledger");
+  });
+
+  test("a duplicate returns the ORIGINAL receipt, flagged as a replay", async () => {
+    // A client whose response was lost has paid and deserves its receipt;
+    // the signature is public on-chain anyway. `replay: true` leaves the
+    // MERCHANT to decide whether to release the resource a second time —
+    // that call is not ours (D10; x402 PR #3021 removed a settled-nonce
+    // path for exactly this reason).
+    const ledger = stubLedger({
+      recordIntent: async () => {
+        throw new DuplicatePayment({
+          state: "confirmed",
+          txSignature: "5T3Ttj-original",
+          messageHash: "msg-1",
+        } as never);
+      },
+    });
+    const app = createApp({
+      facilitator: stubFacilitator({
+        settle: (async () => {
+          throw new Error("must not settle a payment that already settled");
+        }) as never,
+      }),
+      chain: chainAt(900n),
+      ledger,
+    });
+
+    const res = await request(app).post("/settle").send(body()).expect(200);
+    assert.equal(res.body.success, true);
+    assert.equal(res.body.transaction, "5T3Ttj-original");
+    assert.equal(res.body.extra.replay, true);
+  });
+
+  test("a PENDING outcome notes the broadcast instead of resolving", async () => {
+    // pending is the one state the route must NOT close: the bytes may
+    // have landed. Storing the signature is what gives the reconciler
+    // something to ask the chain about later.
+    const ledger = stubLedger();
+    const app = appWith(
+      {
+        settle: (async () => ({
+          success: false,
+          transaction: "353svF",
+          errorMessage: "BlockhashNotFound",
+          network: "solana:x",
+        })) as never,
+      },
+      1100n,
+      ledger,
+    );
+
+    const res = await request(app).post("/settle").send(body()).expect(200);
+    assert.equal(res.body.extra.stipend.state, "pending");
+    assert.deepEqual(ledger.calls, ["recordIntent", "noteBroadcast"]);
   });
 });

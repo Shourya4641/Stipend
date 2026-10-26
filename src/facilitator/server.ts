@@ -9,6 +9,8 @@ import { loadFeePayer } from "./signer";
 import { createChain } from "../shared/chain";
 import { loadConfig } from "./config";
 import { createApp } from "./app";
+import { createDb, runMigrations } from "./db/client";
+import { createLedger } from "./db/ledger";
 import { createLogger } from "../shared/logger";
 import { exitOnFatal } from "../shared/http";
 
@@ -22,6 +24,20 @@ const logger = createLogger({
   pretty: process.env["NODE_ENV"] !== "production",
 });
 const chain = createChain(config.chain);
+
+// Applied at startup on a separate single connection. A facilitator whose
+// schema is behind must not serve: it would write rows the code cannot read.
+await runMigrations(config.databaseUrl);
+const { db, close: closeDb } = createDb(config.databaseUrl);
+const ledger = createLedger(db);
+
+// Let in-flight queries finish rather than dropping them mid-settle.
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.once(signal, async () => {
+    await closeDb();
+    process.exit(0);
+  });
+}
 
 // The ONLY wallet in Stipend that holds SOL. It never holds USDC and never
 // moves the agent's money — it occupies the fee-payer slot and signs for
@@ -45,6 +61,6 @@ const facilitator = new x402Facilitator();
 //   or scheme options; we build the scheme by hand when we need those.
 registerExactSvmScheme(facilitator, { signer, networks: SOLANA_DEVNET_CAIP2 });
 
-createApp({ facilitator, chain, logger }).listen(config.port, () => {
+createApp({ facilitator, chain, ledger, logger }).listen(config.port, () => {
   logger.info({ port: config.port, feePayer: feePayerKeypair.address }, "facilitator listening");
 });

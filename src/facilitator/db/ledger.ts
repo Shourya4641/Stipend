@@ -110,6 +110,22 @@ export function createLedger(db: Db) {
     },
 
     /**
+     * Record that bytes went to the chain, while the outcome is still
+     * unknown.
+     *
+     * Separate from resolve() because the row stays `pending`: this only
+     * gives the reconciler a signature to ask the chain about. Without it,
+     * a broadcast whose confirmation we never saw would be unresolvable —
+     * we would know a payment might exist and have no way to find it.
+     */
+    async noteBroadcast(id: bigint, txSignature: string): Promise<void> {
+      await db
+        .update(settlements)
+        .set({ txSignature })
+        .where(and(eq(settlements.id, id), eq(settlements.state, SettlementState.Pending)));
+    },
+
+    /**
      * Cumulative spend in a window — the actual spend limit (D12).
      *
      * A per-payment cap is not a spend limit: an agent capped at 0.01 USDC

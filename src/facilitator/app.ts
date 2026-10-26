@@ -6,6 +6,9 @@ import { deadlineOf, attemptId, amountOf, facilitatorRequestSchema } from "./wir
 import { decide, DEFAULT_POLICY, type PolicyConfig } from "./policy";
 import { withBody, errorHandler } from "../shared/http";
 import { UpstreamError } from "../shared/errors";
+import { paymentIdentity } from "./message-hash";
+import { fingerprint } from "./db/fingerprint";
+import { DuplicatePayment, type Ledger } from "./db/ledger";
 import { silentLogger, type Logger } from "../shared/logger";
 
 /**
@@ -30,6 +33,16 @@ export type FacilitatorDeps = {
   policy?: PolicyConfig;
   /** Defaults to silent: route tests assert on responses, not noise. */
   logger?: Logger;
+  /**
+   * Durable record of every settlement.
+   *
+   * REQUIRED, not optional: settling with no record is the exact failure
+   * the ledger exists to prevent, so a facilitator without one must not
+   * run. The cost is availability — Postgres down means payments refused
+   * rather than payments unrecorded. That is the right trade for money and
+   * it belongs in the README.
+   */
+  ledger: Ledger;
 };
 
 /**
@@ -40,7 +53,7 @@ export type FacilitatorDeps = {
  * facilitator.
  */
 export function createApp(deps: FacilitatorDeps): express.Express {
-  const { facilitator, chain, policy = DEFAULT_POLICY, logger = silentLogger() } = deps;
+  const { facilitator, chain, ledger, policy = DEFAULT_POLICY, logger = silentLogger() } = deps;
 
   // Defence in depth only. The route decides BEFORE calling settle (below),
   // so nothing depends on catching this hook's exception any more — which is
@@ -163,6 +176,9 @@ export function createApp(deps: FacilitatorDeps): express.Express {
           verdict.reason,
         );
         res.json({ ...args.base, extra: { ...(args.base["extra"] ?? {}), stipend: verdict } });
+        // Returned so the caller can persist it. The route needs to know
+        // WHAT it answered in order to record the same thing.
+        return verdict;
       };
 
       // ── ANSWER: policy says no. A branch, not an exception.
@@ -174,7 +190,7 @@ export function createApp(deps: FacilitatorDeps): express.Express {
       if (!decision.allowed) {
         // warn, not error: expected behaviour, but notable.
         log.warn({ reason: decision.reason }, "policy veto");
-        return reply({
+        await reply({
           ok: false,
           signature: "",
           refusalKind: "policy",
@@ -187,6 +203,70 @@ export function createApp(deps: FacilitatorDeps): express.Express {
             network: paymentRequirements.network,
           },
         });
+        // MUST return. Without it the handler falls through to
+        // recordIntent and settle, and a payment the policy refused is
+        // broadcast anyway — the cap becomes decorative.
+        return;
+      }
+
+      // ── THE ORDERING RULE: the row exists BEFORE anything is broadcast.
+      //
+      // Keyed on the message hash, because a txid is the fee payer's
+      // signature and the SDK produces that inside settle() — at the same
+      // moment it broadcasts. By then it is too late to record intent.
+      const { messageHash: hash, payer } = paymentIdentity(
+        String(paymentPayload.payload["transaction"]),
+        String(paymentRequirements.extra?.["feePayer"] ?? ""),
+      );
+
+      let row;
+      try {
+        row = await ledger.recordIntent({
+          paymentId: undefined, // D10 supplies this
+          requestFingerprint: fingerprint({
+            scheme: paymentRequirements.scheme,
+            network: paymentRequirements.network,
+            asset: paymentRequirements.asset,
+            amount: paymentRequirements.amount,
+            payTo: paymentRequirements.payTo,
+          }),
+          payer,
+          network: paymentRequirements.network,
+          asset: paymentRequirements.asset,
+          payTo: paymentRequirements.payTo,
+          amount: amountOf(paymentRequirements),
+          resourceUrl: String((paymentPayload as { resource?: { url?: string } }).resource?.url ?? "") || undefined,
+          messageHash: hash,
+          signedTx: String(paymentPayload.payload["transaction"]),
+          lastValidBlockHeight,
+        });
+      } catch (err) {
+        // ── ANSWER: this purchase already settled. Return the original
+        //    outcome rather than refusing — a client whose response was
+        //    lost has paid and deserves its receipt. The signature is
+        //    public on-chain anyway.
+        //
+        //    `replay: true` so the MERCHANT decides whether to release the
+        //    resource again; that call is not ours (D10, and x402 PR #3021
+        //    removed a settled-nonce path for exactly this reason).
+        if (err instanceof DuplicatePayment) {
+          log.warn({ state: err.existing.state }, "replay of a settled payment");
+          await reply({
+            ok: err.existing.state === "confirmed",
+            signature: err.existing.txSignature ?? "",
+            errorText: `already settled (${err.existing.state})`,
+            base: {
+              success: err.existing.state === "confirmed",
+              transaction: err.existing.txSignature ?? "",
+              network: paymentRequirements.network,
+              extra: { replay: true },
+            },
+          });
+          return;
+        }
+        // Postgres is down. An ACCIDENT, not a payment outcome: 502, no
+        // verdict, and critically NOTHING WAS BROADCAST.
+        throw new UpstreamError("ledger write failed", err);
       }
 
       // ── ANSWER: the SDK settled, or did not. Either way it RETURNED.
@@ -195,13 +275,26 @@ export function createApp(deps: FacilitatorDeps): express.Express {
         .catch((e: unknown) => {
           throw new UpstreamError("facilitator settle failed", e);
         });
-      return reply({
+
+      const verdict = await reply({
         ok: result.success,
         signature: result.transaction,
         refusalKind: result.transaction ? undefined : "terms",
         errorText: result.errorMessage ?? result.errorReason,
         base: { ...result },
       });
+
+      // Record the outcome. `pending` stays pending for the reconciler.
+      if (verdict && verdict.state !== "pending") {
+        await ledger.resolve(row.id, verdict.state as never, {
+          txSignature: result.transaction || undefined,
+        });
+      } else if (result.transaction) {
+        // Pending, but it WAS broadcast — store the signature so the
+        // reconciler has something to ask the chain about.
+        await ledger.noteBroadcast(row.id, result.transaction);
+      }
+      return;
 
       // ── ACCIDENT: no catch. Both answers are returns above, so anything
       //    thrown here is infrastructure or a bug. Express 5 forwards the

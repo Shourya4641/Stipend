@@ -2,7 +2,7 @@
 
 **Spend-limited agent wallets with failure-safe x402 settlement, on Solana.**
 
-Encode Solana Hackathon 2026 — Best Use of x402
+Encode Solana Hackathon 2026 --
 Status: checkpoint 2 (1 November 2026). Final submission 9 November 2026.
 
 ---

@@ -4,6 +4,7 @@ import request from "supertest";
 import { createApp, type FacilitatorCore } from "./app";
 import { DuplicatePayment, type Ledger } from "./db/ledger";
 import { toAtomic } from "../shared/amount";
+import { DEFAULT_POLICY } from "./policy";
 import { USDC_DECIMALS } from "../shared/chain-constants";
 
 /**
@@ -193,7 +194,7 @@ describe("POST /settle", () => {
       }),
       chain: chainAt(900n),
       ledger: stubLedger(),
-      policy: { maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
+      policy: { ...DEFAULT_POLICY, maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
     });
 
     const res = await request(app).post("/settle").send(body()).expect(200);
@@ -295,7 +296,7 @@ describe("the ledger and the ordering rule", () => {
       facilitator: stubFacilitator(),
       chain: chainAt(900n),
       ledger,
-      policy: { maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
+      policy: { ...DEFAULT_POLICY, maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
     });
 
     await request(app).post("/settle").send(body()).expect(200);

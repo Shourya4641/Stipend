@@ -19,12 +19,18 @@ export type PolicyDecision =
   | { allowed: false; reason: string };
 
 export type PolicyConfig = {
-  /** Per-payment cap in atomic token units. 10_000 = 0.01 USDC at 6 decimals. */
+  /** Refuses one oversized payment. NOT a spend limit on its own. */
   maxAtomicPerPayment: AtomicAmount;
+  /** Total allowed across a rolling window. THIS is the spend limit. */
+  windowCapAtomic: AtomicAmount;
+  /** Length of that rolling window, in milliseconds. */
+  windowMs: number;
 };
 
 export const DEFAULT_POLICY: PolicyConfig = {
   maxAtomicPerPayment: toAtomic(10_000n, USDC_DECIMALS),
+  windowCapAtomic: toAtomic(50_000n, USDC_DECIMALS), // 0.05 USDC
+  windowMs: 60 * 60 * 1000, // one hour
 };
 
 /**
@@ -33,7 +39,6 @@ export const DEFAULT_POLICY: PolicyConfig = {
  * Takes the amount already parsed, so this stays testable without a chain,
  * a server or a request.
  */
-//! Understanding question - Why are we setting the config this way here .. looks like over engineered stuff?
 export function decide(amountAtomic: AtomicAmount, config: PolicyConfig): PolicyDecision {
   // Only zero needs checking here: toAtomic refuses negatives at
   // construction, so an AtomicAmount cannot be negative. The type did the
@@ -45,6 +50,41 @@ export function decide(amountAtomic: AtomicAmount, config: PolicyConfig): Policy
     return {
       allowed: false,
       reason: `per-payment cap ${config.maxAtomicPerPayment} exceeded by ${amountAtomic}`,
+    };
+  }
+  return { allowed: true };
+}
+
+/**
+ * The cumulative check — the one that makes this a spend limit.
+ *
+ * A per-payment cap is not a budget: an agent capped at 0.01 USDC per
+ * payment can spend without bound by paying a thousand times. Only a total
+ * across a window bounds what an agent can lose.
+ *
+ * Pure, like decide(): the caller supplies `spentInWindow` from the ledger.
+ * Keeping the IO outside means this is testable with no database, and the
+ * route logs the decision rather than this function doing it (D2).
+ *
+ * NOT ATOMIC under concurrency. Two payments arriving together can both
+ * read the same `spentInWindow`, both pass, and together exceed the cap by
+ * up to one payment's worth — which maxAtomicPerPayment bounds. Closing it
+ * properly needs the read and the insert in one transaction with the
+ * payer's rows locked. Documented rather than hidden; the per-payment cap
+ * is what keeps the overshoot small.
+ */
+export function decideWindow(
+  amountAtomic: AtomicAmount,
+  spentInWindow: bigint,
+  config: PolicyConfig,
+): PolicyDecision {
+  const total = spentInWindow + amountAtomic;
+  if (total > config.windowCapAtomic) {
+    return {
+      allowed: false,
+      reason:
+        `window cap ${config.windowCapAtomic} exceeded: ` +
+        `${spentInWindow} already spent, ${amountAtomic} requested`,
     };
   }
   return { allowed: true };

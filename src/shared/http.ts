@@ -4,6 +4,7 @@
 import type { NextFunction, Request, Response } from "express";
 import type { z } from "zod";
 import { UpstreamError, WireError } from "./errors";
+import rateLimit from "express-rate-limit";
 import { silentLogger, type Logger } from "./logger";
 
 /**
@@ -88,4 +89,31 @@ export function exitOnFatal(): void {
       process.exit(1);
     });
   }
+}
+
+
+/**
+ * Per-IP limit on the endpoints that spend money.
+ *
+ * A FAIRNESS control, not a spend control — those are different jobs and
+ * conflating them is how you end up with neither. The cumulative cap
+ * protects the fee payer's balance; this protects access to the demo, so
+ * one person cannot consume the whole window in ten seconds while ten
+ * judges each want one payment.
+ *
+ * `trust proxy` must be set on the app behind Railway or Cloudflare, or
+ * every request appears to come from the proxy and the limit applies to
+ * the world as one client.
+ */
+export function paymentRateLimit(windowMs = 30_000, max = 1) {
+  return rateLimit({
+    windowMs,
+    limit: max,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: {
+      error: "rate_limited",
+      message: "one payment per 30 seconds per address — the spend window is shared",
+    },
+  });
 }

@@ -30,7 +30,7 @@ export type PolicyConfig = {
 export const DEFAULT_POLICY: PolicyConfig = {
   maxAtomicPerPayment: toAtomic(10_000n, USDC_DECIMALS),
   windowCapAtomic: toAtomic(50_000n, USDC_DECIMALS), // 0.05 USDC
-  windowMs: 60 * 60 * 1000, // one hour
+  windowMs: 10 * 60 * 1000, // ten minutes — see STIPEND_WINDOW_MINUTES
 };
 
 /**

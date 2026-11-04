@@ -89,6 +89,7 @@ function stubLedger(over: Partial<Ledger> = {}) {
       calls.push("noteBroadcast");
     },
     spentSince: async () => 0n,
+    windowStatus: async () => ({ spent: 0n, oldestAt: null, count: 0 }),
     pending: async () => [],
     byMessageHash: async () => undefined,
     bySignature: async () => undefined,
@@ -449,5 +450,109 @@ describe("the cumulative cap, wired", () => {
 
     const res = await request(app).post("/settle").send(body()).expect(502);
     assert.equal(res.body.error, "upstream_unavailable");
+  });
+});
+
+describe("read-only views for the dashboard", () => {
+  const row = (over: Record<string, unknown> = {}) =>
+    ({
+      id: 7n,
+      state: "confirmed",
+      payer: "988zj3bQBoxNRnQUtRiA8fAJWQrmXb1LCjMgyJSKFy3B",
+      amount: 1_000n,
+      asset: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      resourceUrl: "http://merchant/safety-check",
+      messageHash: "abc123",
+      txSignature: "5T3Ttj",
+      createdAt: new Date("2026-11-04T10:00:00Z"),
+      resolvedAt: new Date("2026-11-04T10:00:02Z"),
+      ...over,
+    }) as never;
+
+  test("GET /settlements serialises bigint and Date for the browser", async () => {
+    // res.json THROWS on a bigint, and a Date serialises to whatever shape
+    // the driver chose. Both are converted at this boundary so the
+    // dashboard never guesses — and so a 500 does not appear on a read
+    // that actually worked.
+    const app = appWith({}, 900n, stubLedger({ recent: async () => [row()] }));
+    const res = await request(app).get("/settlements").expect(200);
+
+    const s = res.body.settlements[0];
+    assert.equal(s.id, "7");
+    assert.equal(s.amount, "1000");
+    assert.equal(s.createdAt, "2026-11-04T10:00:00.000Z");
+    assert.equal(s.resolvedAt, "2026-11-04T10:00:02.000Z");
+  });
+
+  test("an unresolved row reports a null resolvedAt, not a crash", async () => {
+    const app = appWith(
+      {},
+      900n,
+      stubLedger({ recent: async () => [row({ state: "pending", resolvedAt: null, txSignature: null })] }),
+    );
+    const res = await request(app).get("/settlements").expect(200);
+    assert.equal(res.body.settlements[0].resolvedAt, null);
+    assert.equal(res.body.settlements[0].state, "pending");
+  });
+
+  test("a dead database is 502, not an empty list", async () => {
+    // An empty list would read as "no payments yet" — a lie that makes a
+    // broken deployment look like a quiet one.
+    const app = appWith(
+      {},
+      900n,
+      stubLedger({
+        recent: async () => {
+          throw new Error("ECONNREFUSED");
+        },
+      }),
+    );
+    await request(app).get("/settlements").expect(502);
+  });
+});
+
+describe("GET /window/:payer — why the button is disabled", () => {
+  const withSpent = (spent: bigint, oldestAt: Date | null = null, count = 1) =>
+    appWith({}, 900n, stubLedger({ windowStatus: async () => ({ spent, oldestAt, count }) }));
+
+  test("reports the budget before anything is spent", async () => {
+    const res = await request(withSpent(0n, null, 0)).get("/window/agent1").expect(200);
+    assert.equal(res.body.spent, "0");
+    assert.equal(res.body.remaining, res.body.cap);
+    assert.equal(res.body.exhausted, false);
+    assert.equal(res.body.nextReleaseAt, null);
+  });
+
+  test("EXHAUSTED when the remainder is smaller than one payment", async () => {
+    // Not when remaining hits zero. With 500 atomic left and a 10000
+    // per-payment cap the button cannot work, and reporting it available
+    // gives exactly the dead-button-no-reason experience this endpoint
+    // exists to prevent.
+    const nearly = DEFAULT_POLICY.windowCapAtomic - 500n;
+    const res = await request(withSpent(nearly)).get("/window/agent1").expect(200);
+    assert.equal(res.body.remaining, "500");
+    assert.equal(res.body.exhausted, true);
+  });
+
+  test("remaining never goes negative", async () => {
+    // The window check is not atomic, so two concurrent payments can take
+    // the total past the cap. A negative budget on screen would look like
+    // a bug rather than the documented overshoot.
+    const res = await request(withSpent(DEFAULT_POLICY.windowCapAtomic + 5_000n))
+      .get("/window/agent1")
+      .expect(200);
+    assert.equal(res.body.remaining, "0");
+    assert.equal(res.body.exhausted, true);
+  });
+
+  test("nextReleaseAt is the oldest payment plus the window", async () => {
+    // When the FIRST slice of budget returns — the window rolls, so this
+    // is not a full reset and the dashboard must not promise one.
+    const oldest = new Date("2026-11-04T10:00:00Z");
+    const res = await request(withSpent(1_000n, oldest)).get("/window/agent1").expect(200);
+    assert.equal(
+      res.body.nextReleaseAt,
+      new Date(oldest.getTime() + DEFAULT_POLICY.windowMs).toISOString(),
+    );
   });
 });

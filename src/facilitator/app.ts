@@ -4,7 +4,7 @@ import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { classify, classifyPass } from "../shared/classify";
 import { deadlineOf, attemptId, amountOf, facilitatorRequestSchema } from "./wire";
 import { decide, decideWindow, DEFAULT_POLICY, type PolicyConfig } from "./policy";
-import { withBody, errorHandler } from "../shared/http";
+import { withBody, errorHandler, paymentRateLimit } from "../shared/http";
 import { UpstreamError } from "../shared/errors";
 import { paymentIdentity } from "./message-hash";
 import { fingerprint } from "./db/fingerprint";
@@ -82,6 +82,10 @@ export function createApp(deps: FacilitatorDeps): express.Express {
   });
 
   const app = express();
+  // Railway and Cloudflare both front the app, so without this every
+  // request carries the proxy's IP and the rate limit treats the entire
+  // internet as one client.
+  app.set("trust proxy", 1);
   app.use(express.json());
 
   app.get("/supported", (_req, res) => {
@@ -155,6 +159,8 @@ export function createApp(deps: FacilitatorDeps): express.Express {
 
   app.post(
     "/settle",
+    // Before the body is parsed, so a flood costs us nothing but a 429.
+    paymentRateLimit(),
     withBody(facilitatorRequestSchema, async (_req, res, body) => {
       const { paymentPayload, paymentRequirements } = body;
       const id = attemptId(paymentPayload);
@@ -353,6 +359,78 @@ export function createApp(deps: FacilitatorDeps): express.Express {
       //    rejection to the error middleware for us.
     }),
   );
+
+  /**
+   * Read-only views of the ledger, for the dashboard.
+   *
+   * On the facilitator rather than a separate service: the ledger already
+   * answers these, and a fourth role would need its own DATABASE_URL and
+   * an exception in the boundary test. The dashboard stays static files.
+   *
+   * Public, deliberately. Every row describes a devnet payment that is
+   * already visible on-chain, so this is transparency rather than
+   * disclosure. On mainnet it would need an API key.
+   */
+  app.get("/settlements", async (_req, res, next) => {
+    try {
+      const rows = await ledger.recent(50);
+      // bigint and Date do not survive JSON.stringify and res.json: the
+      // first throws, the second silently becomes a string of whatever
+      // shape the driver chose. Both are converted here, once, so the
+      // dashboard never has to guess.
+      res.json({
+        settlements: rows.map((r) => ({
+          id: r.id.toString(),
+          state: r.state,
+          payer: r.payer,
+          amount: r.amount.toString(),
+          asset: r.asset,
+          resourceUrl: r.resourceUrl,
+          messageHash: r.messageHash,
+          txSignature: r.txSignature,
+          createdAt: r.createdAt.toISOString(),
+          resolvedAt: r.resolvedAt?.toISOString() ?? null,
+        })),
+      });
+    } catch (err) {
+      next(new UpstreamError("could not read the ledger", err));
+    }
+  });
+
+  /**
+   * What the dashboard shows BEFORE enabling the pay button.
+   *
+   * A judge arriving after someone else exhausted the window would
+   * otherwise see a dead button and no reason. Stating the budget makes
+   * the spend limit legible without spending anything — the feature
+   * explains itself even when it is blocking.
+   */
+  app.get("/window/:payer", async (req, res, next) => {
+    try {
+      const payer = String(req.params["payer"]);
+      const since = new Date(Date.now() - policy.windowMs);
+      const status = await ledger.windowStatus(payer, since);
+      const remaining = policy.windowCapAtomic - status.spent;
+
+      res.json({
+        payer,
+        windowMs: policy.windowMs,
+        cap: policy.windowCapAtomic.toString(),
+        spent: status.spent.toString(),
+        remaining: (remaining > 0n ? remaining : 0n).toString(),
+        payments: status.count,
+        exhausted: remaining < policy.maxAtomicPerPayment,
+        // When the EARLIEST payment leaves the window, so some budget
+        // returns. Not a full reset: the window rolls, so capacity comes
+        // back in slices.
+        nextReleaseAt: status.oldestAt
+          ? new Date(status.oldestAt.getTime() + policy.windowMs).toISOString()
+          : null,
+      });
+    } catch (err) {
+      next(new UpstreamError("could not read the window", err));
+    }
+  });
 
   // Registered LAST, after every route.
   app.use(errorHandler(logger));

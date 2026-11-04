@@ -77,7 +77,7 @@ createApp({
       feePayer: feePayerKeypair.address,
       maxPerPayment: config.policy.maxAtomicPerPayment,
       windowCap: config.policy.windowCapAtomic,
-      windowHours: config.policy.windowMs / 3_600_000,
+      windowMinutes: config.policy.windowMs / 60_000,
     },
     "facilitator listening",
   );

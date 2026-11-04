@@ -2,7 +2,7 @@ import express from "express";
 import { paymentMiddleware } from "@x402/express";
 import type { x402ResourceServer } from "@x402/core/server";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
-import { errorHandler } from "../shared/http";
+import { errorHandler, paymentRateLimit } from "../shared/http";
 import { UpstreamError, WireError } from "../shared/errors";
 import { NotAMint } from "./safety/check";
 import type { SafetyReport } from "./safety/types";
@@ -34,6 +34,21 @@ export type MerchantDeps = {
 /** Builds the app. Never listens (D5). */
 export function createApp(deps: MerchantDeps): express.Express {
   const app = express();
+  // Behind Railway. Without this every request carries the proxy's IP.
+  app.set("trust proxy", 1);
+
+  /**
+   * THE limit that matters for the demo.
+   *
+   * The facilitator's limit sees only the merchant's IP, so behind one
+   * deployed merchant every payment looks like one client. Here each
+   * browser is distinct, which is what stops one visitor consuming the
+   * whole spend window while ten judges each want a turn.
+   *
+   * On the paid route specifically: the 402 is issued here, so a blocked
+   * request never becomes a payment.
+   */
+  app.use("/safety-check", paymentRateLimit());
 
   const log = deps.logger ?? silentLogger();
 

@@ -150,6 +150,43 @@ export function createLedger(db: Db) {
       return row?.total ?? 0n;
     },
 
+    /**
+     * Spend against the window, and when the next budget frees up.
+     *
+     * One query rather than two: the dashboard needs both numbers
+     * together, and asking separately could show a total from one instant
+     * and a reset from another.
+     *
+     * `oldestAt` is when the EARLIEST payment in the window ages out, not
+     * when the whole window resets — it is a rolling window, so budget
+     * returns gradually. Saying "resets at X" would promise the full cap
+     * at a moment when only part of it is back.
+     */
+    async windowStatus(
+      payer: string,
+      since: Date,
+    ): Promise<{ spent: bigint; oldestAt: Date | null; count: number }> {
+      const [row] = await db
+        .select({
+          spent: sql<bigint>`coalesce(sum(${settlements.amount}), 0)`.mapWith(BigInt),
+          oldestAt: sql<Date | null>`min(${settlements.createdAt})`,
+          count: sql<number>`count(*)`.mapWith(Number),
+        })
+        .from(settlements)
+        .where(
+          and(
+            eq(settlements.payer, payer),
+            gte(settlements.createdAt, since),
+            sql`${settlements.state} in ('confirmed', 'pending')`,
+          ),
+        );
+      return {
+        spent: row?.spent ?? 0n,
+        oldestAt: row?.oldestAt ? new Date(row.oldestAt) : null,
+        count: row?.count ?? 0,
+      };
+    },
+
     /** Rows the reconciler must resolve, oldest first. */
     async pending(limit = 100): Promise<SettlementRow[]> {
       return db

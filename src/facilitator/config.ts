@@ -22,7 +22,16 @@ const schema = z.object({
   /** Total across the window, atomic units. THIS is the spend limit. */
   STIPEND_WINDOW_CAP: z.coerce.bigint().positive().default(50_000n),
   /** Window length in hours. */
-  STIPEND_WINDOW_HOURS: z.coerce.number().positive().default(1),
+  /**
+   * Window length in MINUTES, not hours.
+   *
+   * Ten minutes, deliberately short for a demo: if a visitor exhausts the
+   * budget, a judge arriving afterwards waits ten minutes rather than an
+   * hour, and the dashboard counts down to it. A realistic window would
+   * be hours; a demonstrable one self-heals while someone is still
+   * watching.
+   */
+  STIPEND_WINDOW_MINUTES: z.coerce.number().positive().default(10),
 });
 
 export type FacilitatorConfig = {
@@ -42,7 +51,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): FacilitatorCon
     policy: {
       maxAtomicPerPayment: toAtomic(e.STIPEND_MAX_PER_PAYMENT, USDC_DECIMALS),
       windowCapAtomic: toAtomic(e.STIPEND_WINDOW_CAP, USDC_DECIMALS),
-      windowMs: e.STIPEND_WINDOW_HOURS * 60 * 60 * 1000,
+      windowMs: e.STIPEND_WINDOW_MINUTES * 60 * 1000,
     },
   };
 }

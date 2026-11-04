@@ -211,3 +211,38 @@ describe("queries", () => {
     assert.equal((await ledger.recent())[0]?.messageHash, "r-2");
   });
 });
+
+describe("windowStatus — what the dashboard shows before you click", () => {
+  const since = () => new Date(Date.now() - 60_000);
+
+  test("reports spend, count, and when the oldest payment ages out", async () => {
+    const a = await ledger.recordIntent(intent({ amount: atomic(1_000n), messageHash: "w-1" }));
+    await ledger.resolve(a.id, SettlementState.Confirmed);
+    await new Promise((r) => setTimeout(r, 15));
+    await ledger.recordIntent(intent({ amount: atomic(2_000n), messageHash: "w-2" }));
+
+    const s = await ledger.windowStatus("agent-1", since());
+    assert.equal(s.spent, 3_000n, "pending counts, as spentSince does");
+    assert.equal(s.count, 2);
+    // The EARLIEST payment: budget returns gradually in a rolling window,
+    // so this is when the first slice comes back, not when the cap resets.
+    assert.deepEqual(s.oldestAt, a.createdAt);
+  });
+
+  test("an empty window is 0n and null, not a crash", async () => {
+    // What a judge sees on a fresh deployment. coalesce guards the sum;
+    // min() over no rows is null and must stay null.
+    const s = await ledger.windowStatus("nobody", since());
+    assert.equal(s.spent, 0n);
+    assert.equal(s.oldestAt, null);
+    assert.equal(s.count, 0);
+  });
+
+  test("refused payments are not in the window", async () => {
+    // They wrote no row at all, so there is nothing to exclude — but if
+    // that ever changes, this fails rather than silently inflating spend.
+    const r = await ledger.recordIntent(intent({ amount: atomic(9_000n), messageHash: "w-exp" }));
+    await ledger.resolve(r.id, SettlementState.Expired);
+    assert.equal((await ledger.windowStatus("agent-1", since())).spent, 0n);
+  });
+});

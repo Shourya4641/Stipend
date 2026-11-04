@@ -924,3 +924,72 @@ matches.
 PGlite runs the REAL migrations in-process — the actual constraints and the
 actual trigger, not a hand-written approximation that can drift from what
 production applies. 22 tests in ~3.5s.
+
+---
+
+## D18 — The safety check: shape, honesty, and one accepted flaw
+
+### No score
+
+A number like "87/100" hides the rule that produced it and cannot be argued
+with. Every finding names what was READ from the chain and which rule
+applies, so a reader can disagree with the rule rather than the arithmetic.
+
+### The verdict is the WORST finding, not an average
+
+Averaging lets five reassuring facts bury the one that can empty a wallet.
+A single `risk` sets the verdict regardless of how many `ok`s surround it.
+
+`unavailable` does not lower a real risk, but it DOES cap an otherwise
+clean result: we did not finish looking, so we do not say "ok".
+
+### Unavailable is a first-class answer
+
+`getTokenLargestAccounts` is expensive and public devnet RPC refused it
+outright during development — not a transient 429; it still failed ten
+minutes later. A fact the chain will not give us is reported as
+`unavailable` with the reason, never omitted and never assumed safe.
+Absence of evidence is not evidence of safety.
+
+This also means the endpoint survives a flaky RPC mid-demo with one field
+marked unavailable instead of a 500.
+
+### Caching, because the RPC rate-limits
+
+Two minutes, in-process, bounded at 500 entries. Not an optimisation: the
+check makes three RPC calls and a judge clicking twice would hit the limit.
+Authorities and extensions change rarely, so two minutes of staleness is
+not a risk; an unanswerable check during a demo is.
+
+Deliberately not shared — Redis for a demo is a dependency that earns
+nothing, and nothing cached here is worth surviving a restart.
+
+### A dedicated RPC endpoint is required for deployment
+
+Public devnet RPC cannot serve this endpoint. The deployed facilitator and
+merchant need Helius or equivalent. `SOLANA_RPC_DEVNET` and
+`SOLANA_WS_DEVNET` are already separate config values (D15), so this is two
+env vars and no code change.
+
+### ACCEPTED FLAW: a bad mint is rejected AFTER payment
+
+The 402 is issued, the agent pays, settlement completes, and only then does
+the route discover the mint address is malformed or not a mint. The agent
+paid and received a 400.
+
+Correct in the sense that we cannot refund, and wrong as a design. The
+merchant should validate the mint BEFORE issuing the 402 — it is a single
+`getAccountInfo`, and a caller with a typo would get a 400 having spent
+nothing.
+
+Not changed now because it costs an RPC call on every unpaid request, which
+is a free denial-of-service vector against the merchant, and closing that
+properly needs rate limiting that does not exist yet. Recorded as a known
+limitation for the README rather than quietly accepted.
+
+### Metadata mutability dropped from the six facts
+
+Originally scoped, cut for time: it needs the Metaplex PDA derived and
+decoded, a new dependency and about an hour. The six shipped facts are mint
+authority, freeze authority, token program, Token-2022 extensions, supply,
+and holder concentration.

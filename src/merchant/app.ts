@@ -3,9 +3,19 @@ import { paymentMiddleware } from "@x402/express";
 import type { x402ResourceServer } from "@x402/core/server";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { errorHandler } from "../shared/http";
+import { UpstreamError, WireError } from "../shared/errors";
+import { NotAMint } from "./safety/check";
+import type { SafetyReport } from "./safety/types";
+import type { Cache } from "./safety/cache";
 import { silentLogger, type Logger } from "../shared/logger";
 
 export type MerchantDeps = {
+  /** The paid resource. Required — there is nothing to sell without it. */
+  safetyCheck: (mint: string, network: string) => Promise<SafetyReport>;
+  /** Short-lived, because public RPC rate-limits the check. */
+  cache: Cache;
+  /** Reported in each result so a caller knows which chain was read. */
+  network: string;
   server: x402ResourceServer;
   /** Where payment lands. The merchant holds no key it can spend with. */
   payTo: string;
@@ -63,12 +73,31 @@ export function createApp(deps: MerchantDeps): express.Express {
   // implementation: mint authority, freeze authority, Token-2022 permanent
   // delegate and default-frozen state, holder concentration, metadata
   // mutability — classified against published rules, no opaque score.
-  app.get("/safety-check", (req, res) => {
-    res.json({
-      mint: req.query.mint ?? null,
-      checked: false,
-      note: "stub — real checks come after Stage 2",
-    });
+  // Only reached once payment is verified and settled.
+  app.get("/safety-check", async (req, res, next) => {
+    const mint = String(req.query["mint"] ?? "");
+    if (!mint) {
+      return next(new WireError("mint query parameter is required"));
+    }
+
+    try {
+      const cached = deps.cache.get(mint);
+      if (cached) {
+        log.info({ mint, verdict: cached.verdict, cached: true }, "safety check");
+        return res.json(cached);
+      }
+
+      const report = await deps.safetyCheck(mint, deps.network);
+      deps.cache.set(mint, report);
+      log.info({ mint, verdict: report.verdict, cached: false }, "safety check");
+      return res.json(report);
+    } catch (err) {
+      // A bad mint is the CALLER's error, not ours — and the payment has
+      // already settled by this point, so the status needs to tell them
+      // whether paying again with a corrected address would help.
+      if (err instanceof NotAMint) return next(new WireError(err.message));
+      return next(new UpstreamError("could not read the mint", err));
+    }
   });
 
   app.use(errorHandler(log));

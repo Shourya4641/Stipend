@@ -8,12 +8,16 @@ import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 
 import { loadConfig } from "./config";
 import { createApp } from "./app";
+import { createChain } from "../shared/chain";
+import { createSafetyCheck } from "./safety/check";
+import { createCache } from "./safety/cache";
 import { createLogger } from "../shared/logger";
 import { exitOnFatal } from "../shared/http";
 
 exitOnFatal();
 
 const config = loadConfig();
+const chain = createChain(config.chain);
 const logger = createLogger({
   service: "merchant",
   pretty: process.env["NODE_ENV"] !== "production",
@@ -44,6 +48,9 @@ createApp({
   maxTimeoutSeconds: config.maxTimeoutSeconds,
   syncFacilitatorOnStart: true,
   logger,
+  safetyCheck: createSafetyCheck(chain.rpc as never),
+  cache: createCache(),
+  network: SOLANA_DEVNET_CAIP2,
 }).listen(config.port, () => {
   logger.info({ port: config.port, payTo }, "merchant listening");
 });

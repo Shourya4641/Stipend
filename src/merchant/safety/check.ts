@@ -114,20 +114,39 @@ export function createSafetyCheck(rpc: Rpc) {
     );
 
     // ── Supply ──────────────────────────────────────────────────────────
-    const supply = await rpc.getTokenSupply(mint).send();
-    findings.push({
-      id: "supply",
-      severity: Severity.Ok,
-      title: "Supply",
-      // amount, not uiAmount: uiAmount is a float and already lossy at
-      // these magnitudes (16286767414633.814 vs ...813037).
-      observed: `${supply.value.amount} atomic units, ${supply.value.decimals} decimals`,
-      rule: "Reported for context; supply alone is neither safe nor unsafe.",
-    });
-
+    // Supply has never failed in practice, but an unguarded throw here
+    // loses the five facts already established — and unlike concentration,
+    // an unanswerable supply DOES cap the verdict, because it is not a
+    // call any provider refuses by design.
+    let supply: { value: { amount: string; decimals: number } } | undefined;
+    try {
+      // Read through the local const, not the outer `let`: TypeScript
+      // cannot narrow a variable assigned in one statement and used in
+      // the next, and widening it with `!` would hide a real case.
+      const got = await rpc.getTokenSupply(mint).send();
+      supply = got;
+      findings.push({
+        id: "supply",
+        severity: Severity.Ok,
+        title: "Supply",
+        // amount, not uiAmount: uiAmount is a float and already lossy at
+        // devnet-USDC magnitudes (16286767414633.814 vs ...813037).
+        observed: `${got.value.amount} atomic units, ${got.value.decimals} decimals`,
+        rule: "Reported for context; supply alone is neither safe nor unsafe.",
+      });
+    } catch (err) {
+      findings.push({
+        id: "supply",
+        severity: Severity.Unavailable,
+        title: "Supply",
+        observed: `the RPC did not answer: ${err instanceof Error ? err.message : String(err)}`,
+        rule: "Reported as unavailable rather than assumed; concentration cannot be computed either.",
+      });
+    }
     // ── Concentration. May be unavailable: getTokenLargestAccounts is
     //    expensive and some RPC providers restrict it.
     try {
+      if (!supply) throw new Error("supply is unknown, so a share of it cannot be computed");
       const largest = await rpc.getTokenLargestAccounts(mint).send();
       const total = BigInt(supply.value.amount);
       const holders: bigint[] = largest.value.map((h: { amount: string }) => BigInt(h.amount));
@@ -135,10 +154,14 @@ export function createSafetyCheck(rpc: Rpc) {
       if (total === 0n || holders.length === 0) {
         findings.push({
           id: "concentration",
-          severity: Severity.Unavailable,
+          // OK, not unavailable. Nothing is held, so no holder can
+          // dominate — that is a complete answer, not a gap in what we
+          // know. Marking it unavailable capped the verdict of an
+          // otherwise spotless mint and read as "the check failed".
+          severity: Severity.Ok,
           title: "Holder concentration",
-          observed: "no supply or no holders to compare",
-          rule: "Concentration is undefined when nothing is held.",
+          observed: "nothing is held, so no holder can dominate",
+          rule: "Concentration cannot pose a risk when the supply is zero.",
         });
       } else {
         const pct = (n: bigint) => Number((n * 10_000n) / total) / 100;
@@ -188,10 +211,25 @@ export class NotAMint extends Error {
  * Unavailable does not lower a real risk but does cap an otherwise-clean
  * result, because we did not finish looking.
  */
+/**
+ * Findings whose absence must NOT cap the verdict.
+ *
+ * getTokenLargestAccounts is refused for any widely-held mint — public RPC
+ * rate-limits it, and Helius aborts the scan ("accumulated scan results
+ * exceeded the limit"). So unavailable is the NORMAL answer for popular
+ * tokens, and letting it cap the verdict would mark every well-known token
+ * as "we could not check this", which is misleading in the other
+ * direction.
+ *
+ * The finding is still reported with its reason. It simply does not
+ * override five facts we did establish.
+ */
+const MAY_BE_ABSENT = new Set(["concentration"]);
+
 function worst(findings: Finding[]): Severity {
   const rank = { ok: 0, unavailable: 1, caution: 2, risk: 3 } as const;
-  return findings.reduce<Severity>(
-    (acc, f) => (rank[f.severity] > rank[acc] ? f.severity : acc),
-    Severity.Ok,
-  );
+  return findings.reduce<Severity>((acc, f) => {
+    if (f.severity === Severity.Unavailable && MAY_BE_ABSENT.has(f.id)) return acc;
+    return rank[f.severity] > rank[acc] ? f.severity : acc;
+  }, Severity.Ok);
 }

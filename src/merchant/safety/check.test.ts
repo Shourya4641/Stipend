@@ -4,13 +4,17 @@ import { createSafetyCheck, NotAMint } from "./check";
 import { Severity } from "./types";
 
 /** A fake RPC. Every shape here was captured from a real devnet response. */
-const fakeRpc = (over: {
+/** Named so a typo in a test option is a compile error, not a silent no-op. */
+type FakeOptions = {
   mint?: Record<string, unknown> | null;
   program?: string;
   supply?: string;
   largest?: { amount: string }[];
   largestThrows?: boolean;
-} = {}) => ({
+  supplyThrows?: boolean;
+};
+
+const fakeRpc = (over: FakeOptions = {}) => ({
   getAccountInfo: () => ({
     send: async () => ({
       value:
@@ -35,7 +39,10 @@ const fakeRpc = (over: {
     }),
   }),
   getTokenSupply: () => ({
-    send: async () => ({ value: { amount: over.supply ?? "1000000", decimals: 6 } }),
+    send: async () => {
+      if (over.supplyThrows) throw new Error("rpc unavailable");
+      return { value: { amount: over.supply ?? "1000000", decimals: 6 } };
+    },
   }),
   getTokenLargestAccounts: () => ({
     send: async () => {
@@ -45,7 +52,7 @@ const fakeRpc = (over: {
   }),
 });
 
-const run = (over = {}) => createSafetyCheck(fakeRpc(over) as never)("So11111111111111111111111111111111111111112", "solana:devnet");
+const run = (over: FakeOptions = {}) => createSafetyCheck(fakeRpc(over) as never)("So11111111111111111111111111111111111111112", "solana:devnet");
 
 describe("authorities", () => {
   test("a live mint authority is a RISK, not a note", async () => {
@@ -120,9 +127,14 @@ describe("concentration", () => {
     assert.match(f.observed, /did not answer/);
   });
 
-  test("zero supply is undefined, not zero concentration", async () => {
+  test("zero supply is OK, not unavailable", async () => {
+    // Nothing held means no holder can dominate — a complete answer, not
+    // a gap. Distinguishing this from "the RPC refused" matters: wSOL on
+    // devnet has zero supply, and calling it unavailable capped the
+    // verdict of a spotless mint.
     const r = await run({ supply: "0", largest: [] });
-    assert.equal(r.findings.find((x) => x.id === "concentration")!.severity, Severity.Unavailable);
+    assert.equal(r.findings.find((x) => x.id === "concentration")!.severity, Severity.Ok);
+    assert.equal(r.verdict, Severity.Ok);
   });
 });
 
@@ -135,8 +147,10 @@ describe("the verdict", () => {
   });
 
   test("unavailable caps an otherwise-clean result", async () => {
-    // We did not finish looking, so we do not say "ok".
-    const r = await run({ largestThrows: true });
+    // Still true for any finding NOT on the may-be-absent list: we did not
+    // finish looking, so we do not say "ok". Concentration is the sole
+    // exception, because no provider will answer it for a popular mint.
+    const r = await run({ supplyThrows: true });
     assert.equal(r.verdict, Severity.Unavailable);
   });
 
@@ -169,5 +183,25 @@ describe("serialisation", () => {
     // 500 on a successful check.
     const r = await run();
     assert.doesNotThrow(() => JSON.stringify(r));
+  });
+});
+
+describe("what an absent finding may and may not do", () => {
+  test("an unanswerable CONCENTRATION does not cap an otherwise clean verdict", async () => {
+    // Helius aborts this scan for any widely-held mint, so unavailable is
+    // the normal answer for popular tokens. Capping on it would label
+    // every well-known token "we could not check this".
+    const r = await run({ largestThrows: true });
+    assert.equal(r.verdict, Severity.Ok);
+    assert.equal(
+      r.findings.find((f) => f.id === "concentration")!.severity,
+      Severity.Unavailable,
+      "still reported, with its reason",
+    );
+  });
+
+  test("a real risk still outranks everything", async () => {
+    const r = await run({ largestThrows: true, mint: { mintAuthority: "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM" } });
+    assert.equal(r.verdict, Severity.Risk);
   });
 });

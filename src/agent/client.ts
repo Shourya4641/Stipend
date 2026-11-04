@@ -13,7 +13,9 @@ const config = loadConfig();
 const chain = createChain(config.chain);
 
 /** wSOL, used only as a sample mint for the demo request. */
-const SAMPLE_MINT = "So11111111111111111111111111111111111111112";
+/** wSOL by default; override with MINT= to check a different token. */
+const SAMPLE_MINT =
+  process.env["MINT"] ?? "So11111111111111111111111111111111111111112";
 const URL = `${config.merchantUrl}/safety-check?mint=${SAMPLE_MINT}`;
 
 // Holds USDC and zero SOL — it cannot broadcast anything by itself.

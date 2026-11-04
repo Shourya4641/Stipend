@@ -8,6 +8,15 @@ import { USDC_DECIMALS } from "../shared/chain-constants";
 const schema = z.object({
   SOLANA_RPC_DEVNET: z.string().url().default(DEFAULTS.RPC_URL),
   SOLANA_WS_DEVNET: z.string().url().default("wss://api.devnet.solana.com"),
+  /**
+   * Railway, Render and most PaaS assign the port through $PORT and route
+   * traffic there. Listening on our own default instead means the health
+   * check fails with nothing in the logs to explain it.
+   *
+   * PORT wins when present; FACILITATOR_PORT stays for running two
+   * services on one machine locally.
+   */
+  PORT: z.coerce.number().int().positive().optional(),
   FACILITATOR_PORT: z.coerce.number().int().positive().default(DEFAULTS.FACILITATOR_PORT),
 
   /**
@@ -46,7 +55,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): FacilitatorCon
   const e = parseEnv("facilitator", schema, env);
   return {
     chain: { rpcUrl: e.SOLANA_RPC_DEVNET, wsUrl: e.SOLANA_WS_DEVNET },
-    port: e.FACILITATOR_PORT,
+    port: e.PORT ?? e.FACILITATOR_PORT,
     databaseUrl: e.DATABASE_URL,
     policy: {
       maxAtomicPerPayment: toAtomic(e.STIPEND_MAX_PER_PAYMENT, USDC_DECIMALS),

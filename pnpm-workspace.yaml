@@ -3,3 +3,16 @@ allowBuilds:
 
 ignoredBuiltDependencies:
   - esbuild
+
+# Packages permitted to run install scripts.
+#
+# pnpm 12 refuses to run them silently, which is the right default: an
+# install script is arbitrary code executing on every machine that builds
+# this repo. esbuild genuinely needs one — it downloads the binary for the
+# host platform — and it reaches us through tsx and drizzle-kit.
+#
+# Committed so the Docker build and a fresh clone make the same decision
+# this machine made interactively, rather than failing or quietly
+# differing.
+onlyBuiltDependencies:
+  - esbuild

@@ -1,0 +1,10 @@
+# .keys and .env must never enter an image — an image is not a secret
+# store, and anyone who can pull it can read the fee payer's private key.
+.keys
+.env
+.env.*
+node_modules
+.git
+*.txt
+dist
+tmp

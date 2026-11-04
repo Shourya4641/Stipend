@@ -61,6 +61,24 @@ const facilitator = new x402Facilitator();
 //   or scheme options; we build the scheme by hand when we need those.
 registerExactSvmScheme(facilitator, { signer, networks: SOLANA_DEVNET_CAIP2 });
 
-createApp({ facilitator, chain, ledger, logger }).listen(config.port, () => {
-  logger.info({ port: config.port, feePayer: feePayerKeypair.address }, "facilitator listening");
+createApp({
+  facilitator,
+  chain,
+  ledger,
+  logger,
+  policy: config.policy,
+  feePayer: feePayerKeypair.address,
+}).listen(config.port, () => {
+  // The active caps are logged at startup so a wrong one is visible
+  // immediately, not after four payments have gone through.
+  logger.info(
+    {
+      port: config.port,
+      feePayer: feePayerKeypair.address,
+      maxPerPayment: config.policy.maxAtomicPerPayment,
+      windowCap: config.policy.windowCapAtomic,
+      windowHours: config.policy.windowMs / 3_600_000,
+    },
+    "facilitator listening",
+  );
 });

@@ -99,8 +99,17 @@ function stubLedger(over: Partial<Ledger> = {}) {
   return stub as unknown as Ledger & { calls: string[] };
 }
 
+/** The fee payer in slot 0 of the fixture transaction. */
+const FEE_PAYER = "wtC2iEDE28CubypxTesSx7vieCCpFHWz68z1HC7aEDC";
+
 const appWith = (over: Partial<FacilitatorCore> = {}, height = 900n, ledger = stubLedger()) =>
-  createApp({ facilitator: stubFacilitator(over), chain: chainAt(height), ledger });
+  createApp({
+    facilitator: stubFacilitator(over),
+    chain: chainAt(height),
+    ledger,
+    feePayer: FEE_PAYER,
+    policy: DEFAULT_POLICY,
+  });
 
 describe("GET /supported", () => {
   test("advertises devnet only", async () => {
@@ -194,6 +203,7 @@ describe("POST /settle", () => {
       }),
       chain: chainAt(900n),
       ledger: stubLedger(),
+      feePayer: FEE_PAYER,
       policy: { ...DEFAULT_POLICY, maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
     });
 
@@ -279,6 +289,8 @@ describe("the ledger and the ordering rule", () => {
       }),
       chain: chainAt(900n),
       ledger,
+      feePayer: FEE_PAYER,
+      policy: DEFAULT_POLICY,
     });
 
     const res = await request(app).post("/settle").send(body()).expect(502);
@@ -296,6 +308,7 @@ describe("the ledger and the ordering rule", () => {
       facilitator: stubFacilitator(),
       chain: chainAt(900n),
       ledger,
+      feePayer: FEE_PAYER,
       policy: { ...DEFAULT_POLICY, maxAtomicPerPayment: toAtomic(500n, USDC_DECIMALS) },
     });
 
@@ -326,6 +339,8 @@ describe("the ledger and the ordering rule", () => {
       }),
       chain: chainAt(900n),
       ledger,
+      feePayer: FEE_PAYER,
+      policy: DEFAULT_POLICY,
     });
 
     const res = await request(app).post("/settle").send(body()).expect(200);
@@ -355,5 +370,84 @@ describe("the ledger and the ordering rule", () => {
     const res = await request(app).post("/settle").send(body()).expect(200);
     assert.equal(res.body.extra.stipend.state, "pending");
     assert.deepEqual(ledger.calls, ["recordIntent", "noteBroadcast"]);
+  });
+});
+
+describe("the cumulative cap, wired", () => {
+  /** Under the per-payment cap, so only the window can refuse. */
+  const smallPayment = { ...DEFAULT_POLICY, windowCapAtomic: toAtomic(1_500n, USDC_DECIMALS) };
+
+  test("refuses when the WINDOW is exhausted, though the payment itself is fine", async () => {
+    // The whole point of the feature. 1000 passes decide() every time;
+    // with 1000 already spent against a 1500 cap, the budget says no.
+    const ledger = stubLedger({ spentSince: async () => 1_000n });
+    const app = createApp({
+      facilitator: stubFacilitator({
+        settle: (async () => {
+          throw new Error("settle must not be called once the budget is spent");
+        }) as never,
+      }),
+      chain: chainAt(900n),
+      ledger,
+      feePayer: FEE_PAYER,
+      policy: smallPayment,
+    });
+
+    const res = await request(app).post("/settle").send(body()).expect(200);
+    assert.equal(res.body.errorReason, "policy_abort");
+    assert.match(res.body.errorMessage, /window cap/);
+    assert.equal(res.body.extra.stipend.retryableLater, true, "budget frees up as the window rolls");
+    assert.deepEqual(ledger.calls, [], "refused before any row is written");
+  });
+
+  test("allows the payment that fits in the remaining budget", async () => {
+    const ledger = stubLedger({ spentSince: async () => 500n });
+    const app = createApp({
+      facilitator: stubFacilitator(),
+      chain: chainAt(900n),
+      ledger,
+      feePayer: FEE_PAYER,
+      policy: smallPayment,
+    });
+    await request(app).post("/settle").send(body()).expect(200);
+    assert.deepEqual(ledger.calls, ["recordIntent", "resolve"]);
+  });
+
+  test("the window is checked against the PAYER from the transaction", async () => {
+    // Not from the payload — it has no payer field, and a self-declared
+    // one could name someone else's address to spend their budget.
+    let askedFor = "";
+    const ledger = stubLedger({
+      spentSince: async (payer: string) => {
+        askedFor = payer;
+        return 0n;
+      },
+    });
+    await request(appWith({}, 900n, ledger)).post("/settle").send(body()).expect(200);
+    assert.equal(askedFor, "988zj3bQBoxNRnQUtRiA8fAJWQrmXb1LCjMgyJSKFy3B");
+  });
+
+  test("an unreadable ledger refuses the payment rather than skipping the cap", async () => {
+    // Fail closed. We cannot prove the agent is within budget, so we do
+    // not pay — an unenforced cap is worse than a refused payment.
+    const ledger = stubLedger({
+      spentSince: async () => {
+        throw new Error("ECONNREFUSED");
+      },
+    });
+    const app = createApp({
+      facilitator: stubFacilitator({
+        settle: (async () => {
+          throw new Error("settle must not be called when the budget is unknown");
+        }) as never,
+      }),
+      chain: chainAt(900n),
+      ledger,
+      feePayer: FEE_PAYER,
+      policy: DEFAULT_POLICY,
+    });
+
+    const res = await request(app).post("/settle").send(body()).expect(502);
+    assert.equal(res.body.error, "upstream_unavailable");
   });
 });

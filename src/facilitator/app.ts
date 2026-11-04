@@ -3,7 +3,7 @@ import type { x402Facilitator } from "@x402/core/facilitator";
 import { SOLANA_DEVNET_CAIP2 } from "@x402/svm";
 import { classify, classifyPass } from "../shared/classify";
 import { deadlineOf, attemptId, amountOf, facilitatorRequestSchema } from "./wire";
-import { decide, DEFAULT_POLICY, type PolicyConfig } from "./policy";
+import { decide, decideWindow, DEFAULT_POLICY, type PolicyConfig } from "./policy";
 import { withBody, errorHandler } from "../shared/http";
 import { UpstreamError } from "../shared/errors";
 import { paymentIdentity } from "./message-hash";
@@ -29,8 +29,15 @@ export type ChainReader = { getBlockHeight(): Promise<bigint> };
 export type FacilitatorDeps = {
   facilitator: FacilitatorCore;
   chain: ChainReader;
-  /** The spend policy. Explicit so a test can set a cap it controls. */
-  policy?: PolicyConfig;
+  /**
+   * The spend policy. REQUIRED, with no default.
+   *
+   * It was optional, and server.ts silently never passed it — so the
+   * configured cap was computed, dropped, and DEFAULT_POLICY enforced
+   * instead. Four devnet payments sailed past a 2500 cap before anyone
+   * noticed. A default on a money limit hides exactly this.
+   */
+  policy: PolicyConfig;
   /** Defaults to silent: route tests assert on responses, not noise. */
   logger?: Logger;
   /**
@@ -43,6 +50,15 @@ export type FacilitatorDeps = {
    * it belongs in the README.
    */
   ledger: Ledger;
+  /**
+   * This facilitator's own fee-payer address.
+   *
+   * NOT read from paymentRequirements.extra: that is merchant-supplied,
+   * and if it is absent the payer resolves to the fee payer itself — so
+   * spentSince queries an address no agent uses and the cap silently
+   * enforces nothing. We loaded this keypair; we know it.
+   */
+  feePayer: string;
 };
 
 /**
@@ -53,7 +69,7 @@ export type FacilitatorDeps = {
  * facilitator.
  */
 export function createApp(deps: FacilitatorDeps): express.Express {
-  const { facilitator, chain, ledger, policy = DEFAULT_POLICY, logger = silentLogger() } = deps;
+  const { facilitator, chain, ledger, feePayer, policy, logger = silentLogger() } = deps;
 
   // Defence in depth only. The route decides BEFORE calling settle (below),
   // so nothing depends on catching this hook's exception any more — which is
@@ -181,43 +197,79 @@ export function createApp(deps: FacilitatorDeps): express.Express {
         return verdict;
       };
 
-      // ── ANSWER: policy says no. A branch, not an exception.
-      //    refusalKind comes from the decision itself, three lines above the
-      //    use — there is nothing stored in between that another request
-      //    could overwrite. That is why policyVeto is deleted, not fixed.
-      const decision = decide(amountOf(paymentRequirements), policy);
-      log.debug({ amount: paymentRequirements.amount, asset: paymentRequirements.asset }, "policy check");
-      if (!decision.allowed) {
-        // warn, not error: expected behaviour, but notable.
-        log.warn({ reason: decision.reason }, "policy veto");
+      // Decoded FIRST, because the cumulative cap needs to know who is
+      // paying and only the transaction can say. The payload has no payer
+      // field, and a self-declared one could name someone else's address
+      // to spend against their budget.
+      const { messageHash: hash, payer } = paymentIdentity(
+        String(paymentPayload.payload["transaction"]),
+        feePayer,
+      );
+      const amount = amountOf(paymentRequirements);
+
+      /** Both caps refuse the same way. One shape, two callers. */
+      const refuse = async (reason: string) => {
+        log.warn({ reason }, "policy veto");
         await reply({
           ok: false,
           signature: "",
           refusalKind: "policy",
-          errorText: decision.reason,
+          errorText: reason,
           base: {
             success: false,
             errorReason: "policy_abort",
-            errorMessage: decision.reason,
+            errorMessage: reason,
             transaction: "",
             network: paymentRequirements.network,
           },
         });
-        // MUST return. Without it the handler falls through to
-        // recordIntent and settle, and a payment the policy refused is
-        // broadcast anyway — the cap becomes decorative.
+      };
+
+      // ── ANSWER: policy says no. A branch, not an exception.
+      //    refusalKind comes from the decision itself, three lines above the
+      //    use — there is nothing stored in between that another request
+      //    could overwrite. That is why policyVeto is deleted, not fixed.
+      const decision = decide(amount, policy);
+      log.debug({ amount: paymentRequirements.amount, payer }, "policy check");
+      if (!decision.allowed) {
+        // MUST return. Without it the handler falls through to recordIntent
+        // and settle, and a payment the policy refused is broadcast anyway
+        // — the cap becomes decorative. (This fell through once; a test
+        // asserting on what the route DID, not what it returned, caught it.)
+        await refuse(decision.reason);
         return;
       }
 
-      // ── THE ORDERING RULE: the row exists BEFORE anything is broadcast.
+      // ── ANSWER: the BUDGET says no. The cap the project is named for.
       //
-      // Keyed on the message hash, because a txid is the fee payer's
-      // signature and the SDK produces that inside settle() — at the same
-      // moment it broadcasts. By then it is too late to record intent.
-      const { messageHash: hash, payer } = paymentIdentity(
-        String(paymentPayload.payload["transaction"]),
-        String(paymentRequirements.extra?.["feePayer"] ?? ""),
-      );
+      // A per-payment cap is not a spend limit: an agent capped at 0.01
+      // USDC per payment can spend without bound by paying a thousand
+      // times. Only a total across a window bounds what an agent can lose.
+      //
+      // spentSince counts PENDING as spent, deliberately — a pending
+      // payment might have landed, and a limit that ignores "might have"
+      // is one a crash-and-retry cycle walks straight through. The cost is
+      // that the reconciler is what RELEASES budget, not just bookkeeping.
+      //
+      // NOT ATOMIC: two payments arriving together can read the same total
+      // and both pass, overshooting by at most one payment — which the
+      // per-payment cap bounds. Closing it needs the read and the insert in
+      // one transaction with this payer's rows locked.
+      const windowStart = new Date(Date.now() - policy.windowMs);
+      const spent = await ledger
+        .spentSince(payer, windowStart)
+        .catch((e: unknown) => {
+          // Cannot prove the agent is within budget, so do not pay. Fail
+          // closed: an unenforced cap is worse than a refused payment.
+          throw new UpstreamError("ledger read failed", e);
+        });
+
+      const windowDecision = decideWindow(amount, spent, policy);
+      log.debug({ spent, cap: policy.windowCapAtomic, payer }, "window check");
+      if (!windowDecision.allowed) {
+        await refuse(windowDecision.reason);
+        return;
+      }
 
       let row;
       try {
@@ -234,7 +286,7 @@ export function createApp(deps: FacilitatorDeps): express.Express {
           network: paymentRequirements.network,
           asset: paymentRequirements.asset,
           payTo: paymentRequirements.payTo,
-          amount: amountOf(paymentRequirements),
+          amount,
           resourceUrl: String((paymentPayload as { resource?: { url?: string } }).resource?.url ?? "") || undefined,
           messageHash: hash,
           signedTx: String(paymentPayload.payload["transaction"]),

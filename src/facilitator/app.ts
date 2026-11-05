@@ -371,6 +371,16 @@ export function createApp(deps: FacilitatorDeps): express.Express {
    * already visible on-chain, so this is transparency rather than
    * disclosure. On mainnet it would need an API key.
    */
+  /**
+   * The demo page is served from a different origin, so the browser needs
+   * permission to read these. Both endpoints are read-only and describe
+   * devnet payments already visible on-chain.
+   */
+  app.use(["/settlements", "/window"], (_req, res, next) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    next();
+  });
+
   app.get("/settlements", async (_req, res, next) => {
     try {
       const rows = await ledger.recent(50);
@@ -419,7 +429,17 @@ export function createApp(deps: FacilitatorDeps): express.Express {
         spent: status.spent.toString(),
         remaining: (remaining > 0n ? remaining : 0n).toString(),
         payments: status.count,
-        exhausted: remaining < policy.maxAtomicPerPayment,
+        // The smallest payment that could still succeed is bounded by
+        // BOTH caps. Comparing against maxAtomicPerPayment alone reported
+        // an empty window as exhausted whenever the per-payment cap was
+        // the larger of the two — which is exactly how the demo is
+        // configured when the window is tightened for a short run.
+        exhausted:
+          remaining <= 0n ||
+          remaining <
+            (policy.maxAtomicPerPayment < policy.windowCapAtomic
+              ? policy.maxAtomicPerPayment
+              : policy.windowCapAtomic),
         // When the EARLIEST payment leaves the window, so some budget
         // returns. Not a full reset: the window rolls, so capacity comes
         // back in slices.

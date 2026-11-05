@@ -105,12 +105,27 @@ export function exitOnFatal(): void {
  * every request appears to come from the proxy and the limit applies to
  * the world as one client.
  */
+/**
+ * Limits payment ATTEMPTS, not HTTP requests.
+ *
+ * An x402 payment is TWO requests: an unpaid probe that earns the 402,
+ * then a retry carrying the payment. Counting both meant the probe
+ * consumed the budget and the payment itself was refused — the first
+ * click on the demo returned 429.
+ *
+ * So requests that already carry a payment are skipped. The unpaid probe
+ * is free to send and is what needs limiting; a paid request is
+ * self-limiting, because the sender spent money and the spend cap bounds
+ * how much.
+ */
 export function paymentRateLimit(windowMs = 30_000, max = 1) {
   return rateLimit({
     windowMs,
     limit: max,
     standardHeaders: "draft-7",
     legacyHeaders: false,
+    skip: (req) =>
+      Boolean(req.headers["payment-signature"] ?? req.headers["x-payment"]),
     message: {
       error: "rate_limited",
       message: "one payment per 30 seconds per address — the spend window is shared",

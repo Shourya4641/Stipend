@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stipend — spend-limited agent payments on Solana</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --line: #272b35; --text: #e7e9ee;
+    --dim: #8b92a3; --ok: #3fb950; --warn: #d29922; --risk: #f85149;
+    --accent: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1.25rem; background: var(--bg); color: var(--text);
+    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 1.45rem; margin: 0 0 .3rem; }
+  .sub { color: var(--dim); margin: 0 0 1.75rem; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem;
+  }
+  h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .09em;
+       color: var(--dim); margin: 0 0 .8rem; font-weight: 600; }
+  .bar { height: 7px; background: #11141a; border-radius: 4px; overflow: hidden; margin: .55rem 0; }
+  .bar > span { display: block; height: 100%; background: var(--accent); transition: width .4s; }
+  .budget { display: flex; justify-content: space-between; font-size: .88rem; color: var(--dim); }
+  button {
+    background: var(--accent); color: #06080c; border: 0; border-radius: 7px;
+    padding: .62rem 1.15rem; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { background: #30363d; color: var(--dim); cursor: not-allowed; }
+  .row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+  select, input {
+    background: #11141a; color: var(--text); border: 1px solid var(--line);
+    border-radius: 7px; padding: .55rem .7rem; font: inherit;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+  th { text-align: left; color: var(--dim); font-weight: 500; padding: .4rem .5rem;
+       border-bottom: 1px solid var(--line); font-size: .76rem;
+       text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: .45rem .5rem; border-bottom: 1px solid #1d2129; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+  .pill { padding: .1rem .5rem; border-radius: 20px; font-size: .74rem; font-weight: 600; }
+  .confirmed, .ok { background: rgba(63,185,80,.14); color: var(--ok); }
+  .pending { background: rgba(210,153,34,.14); color: var(--warn); }
+  .rejected, .failed, .risk { background: rgba(248,81,73,.14); color: var(--risk); }
+  .expired, .caution, .unavailable { background: rgba(139,146,163,.14); color: var(--dim); }
+  .note { color: var(--dim); font-size: .85rem; margin-top: .55rem; }
+  pre { background: #11141a; border: 1px solid var(--line); border-radius: 7px;
+        padding: .8rem; overflow-x: auto; font-size: .8rem; margin: .5rem 0 0; }
+  .finding { border-left: 2px solid var(--line); padding: .35rem 0 .35rem .7rem; margin-bottom: .55rem; }
+  .finding .t { font-weight: 600; font-size: .88rem; }
+  .finding .o { color: var(--dim); font-size: .82rem; }
+  .err { color: var(--risk); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Stipend</h1>
+  <p class="sub">An agent wallet holding USDC and <strong>zero SOL</strong> pays for an on-chain
+     token safety check. The facilitator covers the transaction fee and enforces a spend limit.</p>
+
+  <div class="panel">
+    <h2>Spend window</h2>
+    <div class="bar"><span id="bar" style="width:0%"></span></div>
+    <div class="budget">
+      <span id="budget">reading…</span>
+      <span id="reset"></span>
+    </div>
+    <p class="note" id="windowNote"></p>
+  </div>
+
+  <div class="panel">
+    <h2>Run a payment</h2>
+    <div class="row">
+      <select id="mint">
+        <option value="So11111111111111111111111111111111111111112">wSOL — expect a clean report</option>
+        <option value="4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU">devnet USDC — expect risks</option>
+      </select>
+      <button id="pay">Pay 0.001 USDC and check</button>
+      <span id="status" class="note"></span>
+    </div>
+    <div id="result"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Settlement ledger</h2>
+    <table>
+      <thead><tr><th>State</th><th>Amount</th><th>Payer</th><th>Signature</th><th>When</th></tr></thead>
+      <tbody id="ledger"><tr><td colspan="5" class="note">reading…</td></tr></tbody>
+    </table>
+    <p class="note">Every row was written <strong>before</strong> the transaction was broadcast.
+       A row with no signature is one we may or may not have sent — never re-signed, only reconciled.</p>
+  </div>
+</div>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+let cfg = null;
+
+const atomicToUsdc = (a) => (Number(a) / 1e6).toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+const short = (s, n = 8) => (s ? `${s.slice(0, n)}…` : "—");
+
+async function loadConfig() {
+  cfg = await (await fetch("/config")).json();
+}
+
+async function refreshWindow() {
+  try {
+    const r = await fetch(`${cfg.facilitatorUrl}/window/${cfg.payer}`);
+    if (!r.ok) throw new Error(`facilitator returned ${r.status}`);
+    const w = await r.json();
+
+    const used = Number(w.spent) / Number(w.cap);
+    $("bar").style.width = `${Math.min(100, used * 100)}%`;
+    $("budget").textContent =
+      `${atomicToUsdc(w.spent)} of ${atomicToUsdc(w.cap)} USDC used · ${w.payments} payment(s)`;
+
+    // The whole reason this panel exists: a judge who arrives after
+    // someone else exhausted the budget sees WHY, not a dead button.
+    if (w.exhausted) {
+      $("pay").disabled = true;
+      const mins = w.nextReleaseAt
+        ? Math.max(0, Math.ceil((new Date(w.nextReleaseAt) - Date.now()) / 60000))
+        : null;
+      $("reset").textContent = mins !== null ? `budget returns in ~${mins} min` : "";
+      $("windowNote").textContent =
+        "Spend limit reached. This is the feature working: the agent cannot spend beyond its window, " +
+        "however many times it is asked. Budget returns as the oldest payment ages out.";
+    } else {
+      $("pay").disabled = false;
+      $("reset").textContent = "";
+      $("windowNote").textContent =
+        `Remaining: ${atomicToUsdc(w.remaining)} USDC in a ${w.windowMs / 60000}-minute rolling window.`;
+    }
+  } catch (e) {
+    $("budget").innerHTML = `<span class="err">cannot reach the facilitator: ${e.message}</span>`;
+    $("pay").disabled = true;
+  }
+}
+
+async function refreshLedger() {
+  try {
+    const r = await fetch(`${cfg.facilitatorUrl}/settlements`);
+    if (!r.ok) throw new Error(`facilitator returned ${r.status}`);
+    const { settlements } = await r.json();
+    if (!settlements.length) {
+      $("ledger").innerHTML = `<tr><td colspan="5" class="note">no payments yet</td></tr>`;
+      return;
+    }
+    $("ledger").innerHTML = settlements
+      .map(
+        (s) => `<tr>
+          <td><span class="pill ${s.state}">${s.state}</span></td>
+          <td class="mono">${atomicToUsdc(s.amount)}</td>
+          <td class="mono">${short(s.payer)}</td>
+          <td class="mono">${short(s.txSignature, 12)}</td>
+          <td class="note">${new Date(s.createdAt).toLocaleTimeString()}</td>
+        </tr>`,
+      )
+      .join("");
+  } catch (e) {
+    $("ledger").innerHTML = `<tr><td colspan="5" class="err">${e.message}</td></tr>`;
+  }
+}
+
+function renderReport(report) {
+  if (!report || !report.findings) return `<pre>${JSON.stringify(report, null, 2)}</pre>`;
+  const findings = report.findings
+    .map(
+      (f) => `<div class="finding">
+        <div class="t"><span class="pill ${f.severity}">${f.severity}</span> ${f.title}</div>
+        <div class="o">${f.observed}</div>
+        <div class="o">${f.rule}</div>
+      </div>`,
+    )
+    .join("");
+  return `<p class="note" style="margin-top:1rem">
+      Verdict: <span class="pill ${report.verdict}">${report.verdict}</span>
+      — the worst finding, not an average.</p>${findings}`;
+}
+
+$("pay").addEventListener("click", async () => {
+  $("pay").disabled = true;
+  $("status").textContent = "paying…";
+  $("result").innerHTML = "";
+
+  try {
+    const r = await fetch(`/pay?mint=${encodeURIComponent($("mint").value)}`, { method: "POST" });
+    const result = await r.json();
+
+    if (r.status === 429) {
+      $("status").innerHTML = `<span class="err">${result.message}</span>`;
+    } else if (result.ok) {
+      const retried = result.attempts.length > 1;
+      $("status").textContent = retried
+        ? `paid after ${result.attempts.length} attempts — exactly one payment`
+        : "paid";
+      $("result").innerHTML = renderReport(result.body);
+    } else {
+      // A refused payment is a RESULT, not an error. Show the reason.
+      const last = result.attempts[result.attempts.length - 1];
+      const verdict = last?.stipend?.stipend;
+      $("status").innerHTML = `<span class="err">refused (${result.status})</span>`;
+      $("result").innerHTML = `<pre>${JSON.stringify(verdict ?? result.body, null, 2)}</pre>`;
+    }
+  } catch (e) {
+    $("status").innerHTML = `<span class="err">${e.message}</span>`;
+  }
+
+  await Promise.all([refreshWindow(), refreshLedger()]);
+  $("status").textContent = $("status").textContent || "";
+});
+
+await loadConfig();
+await Promise.all([refreshWindow(), refreshLedger()]);
+setInterval(() => { refreshWindow(); refreshLedger(); }, 10000);
+</script>
+</body>
+</html>

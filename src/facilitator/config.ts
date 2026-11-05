@@ -53,6 +53,17 @@ export type FacilitatorConfig = {
 /** Called ONCE by the entrypoint. Never at import time (D3). */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): FacilitatorConfig {
   const e = parseEnv("facilitator", schema, env);
+
+  // A per-payment cap above the window cap means no payment can ever
+  // succeed: the window refuses everything the per-payment check allows.
+  // Caught at boot rather than presented as a permanently exhausted
+  // budget, which is what it looked like on the dashboard.
+  if (e.STIPEND_MAX_PER_PAYMENT > e.STIPEND_WINDOW_CAP) {
+    throw new Error(
+      `STIPEND_MAX_PER_PAYMENT (${e.STIPEND_MAX_PER_PAYMENT}) exceeds ` +
+        `STIPEND_WINDOW_CAP (${e.STIPEND_WINDOW_CAP}) — no payment could ever succeed`,
+    );
+  }
   return {
     chain: { rpcUrl: e.SOLANA_RPC_DEVNET, wsUrl: e.SOLANA_WS_DEVNET },
     port: e.PORT ?? e.FACILITATOR_PORT,

@@ -30,16 +30,24 @@ const ROLES = ["agent", "merchant", "facilitator"] as const;
  */
 const FORBIDDEN: Record<string, readonly string[]> = {
   // A merchant that can import the facilitator can reach its fee-payer key.
-  merchant: ["facilitator", "agent", "tools"],
+  merchant: ["facilitator", "agent", "tools", "demo"],
   // An agent that can import the facilitator can read the spend policy it
   // is supposed to be subject to.
-  agent: ["facilitator", "merchant", "tools"],
+  agent: ["facilitator", "merchant", "tools", "demo"],
   // The facilitator is the trust boundary; it needs nobody else's internals.
-  facilitator: ["agent", "merchant", "tools"],
+  facilitator: ["agent", "merchant", "tools", "demo"],
   // THE ONE THAT WAS MISSING. Every role imports shared/, so a single
   // import from shared/ into a role gives every other role a transitive
   // path to it — while all the direct-import assertions above still pass.
-  shared: ["agent", "merchant", "facilitator", "tools"],
+  shared: ["agent", "merchant", "facilitator", "tools", "demo"],
+
+  /**
+   * demo/ is a hosted AGENT with a web face, so importing agent/ is
+   * exactly what it is for. It must not reach the other roles: it has no
+   * business with the fee payer or the merchant's internals, and the
+   * moment it does, "the demo works" stops implying "the system works".
+   */
+  demo: ["facilitator", "merchant", "tools"],
 };
 
 /** Recursive: a role growing a subdirectory must not escape the check. */

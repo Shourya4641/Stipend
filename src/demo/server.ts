@@ -24,6 +24,6 @@ createApp({
   facilitatorPublicUrl: config.facilitatorPublicUrl,
   payer: signer.address,
   logger,
-}).listen(config.port, () => {
+}).listen(config.port, "::", () => {
   logger.info({ port: config.port, payer: signer.address }, "demo listening");
 });

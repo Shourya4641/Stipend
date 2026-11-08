@@ -453,6 +453,15 @@ export function createApp(deps: FacilitatorDeps): express.Express {
   });
 
   // Registered LAST, after every route.
+  /**
+   * Liveness only — no database, no chain. A healthcheck that depends on
+   * Postgres would take this service down whenever the database blips,
+   * when the honest answer is "this process is up".
+   */
+  app.get("/health", (_req, res) => {
+    res.json({ service: "facilitator", ok: true });
+  });
+
   app.use(errorHandler(logger));
 
   return app;

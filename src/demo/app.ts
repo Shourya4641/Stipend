@@ -73,6 +73,15 @@ export function createApp(deps: DemoDeps): express.Express {
   const here = dirname(fileURLToPath(import.meta.url));
   app.use(express.static(join(here, "public")));
 
+  /**
+   * Liveness only — no database, no chain. A healthcheck that depends on
+   * Postgres would take this service down whenever the database blips,
+   * when the honest answer is "this process is up".
+   */
+  app.get("/health", (_req, res) => {
+    res.json({ service: "demo", ok: true });
+  });
+
   app.use(errorHandler(log));
   return app;
 }

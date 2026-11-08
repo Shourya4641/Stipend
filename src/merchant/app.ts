@@ -115,6 +115,15 @@ export function createApp(deps: MerchantDeps): express.Express {
     }
   });
 
+  /**
+   * Liveness only — no database, no chain. A healthcheck that depends on
+   * Postgres would take this service down whenever the database blips,
+   * when the honest answer is "this process is up".
+   */
+  app.get("/health", (_req, res) => {
+    res.json({ service: "merchant", ok: true });
+  });
+
   app.use(errorHandler(log));
 
   return app;

@@ -68,7 +68,7 @@ createApp({
   logger,
   policy: config.policy,
   feePayer: feePayerKeypair.address,
-}).listen(config.port, () => {
+}).listen(config.port, "::", () => {
   // The active caps are logged at startup so a wrong one is visible
   // immediately, not after four payments have gone through.
   logger.info(

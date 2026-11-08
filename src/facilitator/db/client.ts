@@ -33,6 +33,10 @@ export function createDb(url: string) {
 export async function runMigrations(url: string): Promise<void> {
   const client = postgres(url, {
     max: 1,
+    // Fail fast. Migrations run at module top level, so an unreachable
+    // database hangs startup until Railway's 300s healthcheck gives up —
+    // with nothing in the logs. 10s and a clear error instead.
+    connect_timeout: 10,
     // The migrator runs CREATE ... IF NOT EXISTS on its own bookkeeping
     // table, so Postgres emits a NOTICE on every boot after the first.
     // postgres.js prints notices to stdout by default; swallowing them

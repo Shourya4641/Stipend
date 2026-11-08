@@ -51,6 +51,6 @@ createApp({
   safetyCheck: createSafetyCheck(chain.rpc as never),
   cache: createCache(),
   network: SOLANA_DEVNET_CAIP2,
-}).listen(config.port, () => {
+}).listen(config.port, "::", () => {
   logger.info({ port: config.port, payTo }, "merchant listening");
 });

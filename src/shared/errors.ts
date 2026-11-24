@@ -1,6 +1,6 @@
 /**
  * Typed errors so one handler can map them, without `instanceof` chains in
- * routes (D4).
+ * routes.
  *
  * The rule: a PAYMENT OUTCOME is never an exception. "Your spend cap was
  * exceeded" is an answer — the system worked and the decision carries

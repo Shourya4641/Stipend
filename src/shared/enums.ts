@@ -1,11 +1,10 @@
 /**
- * Vocabulary that crosses role boundaries (D1).
+ * Vocabulary that crosses role boundaries.
  *
  * `as const` objects, not the `enum` keyword. A TypeScript string enum is
  * NOMINALLY typed: a plain `string` from @x402/core is not assignable to an
  * enum member without a cast, and this code reads strings off the wire
- * constantly — network, scheme, invalidReason, errorReason. Every boundary
- * would need a cast, which is exactly what D6 removes.
+ * constantly — network, scheme, invalidReason, errorReason. 
  *
  * This pattern gives autocomplete, a usable type, Object.values() for tests,
  * and direct comparison with SDK strings. `const enum` is already impossible

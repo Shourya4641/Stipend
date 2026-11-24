@@ -1,5 +1,5 @@
 /**
- * Parse process.env against a schema, reporting EVERY problem at once (D3).
+ * Parse process.env against a schema, reporting EVERY problem at once.
  *
  * One-per-restart discovery wastes a session. Called from each role's
  * loadConfig(), never at import time.
@@ -11,7 +11,7 @@ import type { z } from "zod";
  * Load .env into process.env, once.
  *
  * Called from parseEnv rather than at import time, so merely importing a
- * config module still has no side effects (D3). A real deployment injects
+ * config module still has no side effects. A real deployment injects
  * variables and has no .env file; dotenv is a no-op then.
  */
 let dotenvLoaded = false;

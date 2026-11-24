@@ -66,7 +66,7 @@ describe("recordIntent", () => {
     );
   });
 
-  test("the same payment-identifier for one payer is one purchase (D10)", async () => {
+  test("the same payment-identifier for one payer is one purchase", async () => {
     // The whole point: two DIFFERENT transactions, one logical purchase.
     await ledger.recordIntent(intent({ paymentId: "pay_abc", messageHash: "sig-a" }));
     await assert.rejects(

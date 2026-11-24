@@ -55,6 +55,5 @@ const message = pipe(
 const signed = await signTransactionMessageWithSigners(message);
 assertIsTransactionWithBlockhashLifetime(signed);
 
-//! Understanding question - Please explain to me the way we have written sendAndConfirm() here .. I am not sure of this implementation pattern.
 await chain.sendAndConfirm(signed, { commitment: "confirmed" });
 console.log(`confirmed: ${getSignatureFromTransaction(signed)}`);

@@ -1,5 +1,5 @@
 /**
- * The paid resource: six on-chain facts about a token mint (D14).
+ * The paid resource: six on-chain facts about a token mint.
  *
  * No score. A number like "87/100" hides the rule that produced it and
  * cannot be argued with; a judge, or an agent, can disagree with a stated

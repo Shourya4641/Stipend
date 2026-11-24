@@ -1,5 +1,5 @@
 /**
- * Branded atomic token amounts (D11).
+ * Branded atomic token amounts.
  *
  * `10_000n` is 0.01 USDC ONLY because USDC has 6 decimals. Nothing in the
  * policy knows that, and nothing checked it: a cap written thinking in

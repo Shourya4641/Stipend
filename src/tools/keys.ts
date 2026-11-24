@@ -2,8 +2,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
 
-// Demo scaffolding. Moves to tools/ in Stage C (D13): the library must
-// ACCEPT a signer, never create one.
+// Demo scaffolding. The library must ACCEPT a signer, never create one.
 const KEY_DIR = ".keys";
 
 /**

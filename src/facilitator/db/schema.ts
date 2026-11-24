@@ -35,11 +35,11 @@ export const settlements = pgTable(
     id: bigint("id", { mode: "bigint" }).primaryKey().generatedAlwaysAsIdentity(),
 
     // ── identity ─────────────────────────────────────────────────────────
-    /** Client-generated, one per logical purchase. Survives a re-sign (D10). */
+    /** Client-generated, one per logical purchase. Survives a re-sign. */
     paymentId: text("payment_id"),
     /**
      * sha256 of the canonical terms (scheme, network, asset, amount, payTo,
-     * resource). Computed from day one — D10 later adds the COMPARISON
+     * resource). Computed from day one — later adds the COMPARISON
      * ("same payment id, different terms -> 409"), not the value.
      */
     requestFingerprint: text("request_fingerprint").notNull(),
@@ -111,7 +111,7 @@ export const settlements = pgTable(
       .where(sql`${t.txSignature} is not null`),
 
     /**
-     * One settlement per logical purchase (D10). PARTIAL, because rows with
+     * One settlement per logical purchase. PARTIAL, because rows with
      * no payment-identifier must not collide with each other.
      */
     uniqueIndex("settlements_payment_id_uq")

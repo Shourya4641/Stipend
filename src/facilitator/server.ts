@@ -1,6 +1,6 @@
 /**
  * Entrypoint. The only file here that touches the environment, constructs
- * real dependencies, or opens a port (D5).
+ * real dependencies, or opens a port.
  */
 import { x402Facilitator } from "@x402/core/facilitator";
 import { registerExactSvmScheme } from "@x402/svm/exact/facilitator";
@@ -44,7 +44,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 // that slot alone.
 const feePayerKeypair = await loadFeePayer();
 
-// Asymmetric with the agent on purpose (D12): the agent's signer takes no
+// Asymmetric with the agent on purpose: the agent's signer takes no
 // RPC because it only signs its own slot and hands the bytes away. The
 // facilitator fills the fee-payer slot AND must send and observe, so it
 // needs an RPC. The asymmetry encodes the trust boundary.

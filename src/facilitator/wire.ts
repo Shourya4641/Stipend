@@ -1,5 +1,5 @@
 /**
- * Narrowing untrusted request bodies into the SDK's own types (D6).
+ * Narrowing untrusted request bodies into the SDK's own types.
  *
  * Express hands over `req.body: any`. Narrowing it in one tested place is
  * what separates a malformed request being REPORTED as malformed from it
@@ -75,7 +75,7 @@ const payloadSchema = z.object({
 
 /**
  * Exported so routes can hand it to withBody and get a typed body, rather
- * than parsing inside the handler and re-deriving the type (D4).
+ * than parsing inside the handler and re-deriving the type.
  */
 export const facilitatorRequestSchema = z.object({
   paymentPayload: payloadSchema,

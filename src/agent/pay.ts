@@ -1,13 +1,5 @@
 /**
  * One payment attempt, with self-diagnosis and bounded retry.
- *
- * Extracted from client.ts so the CLI and the hosted demo run the SAME
- * code. A demo that reimplements the agent is a demo that can diverge
- * from the thing it claims to show.
- *
- * A factory taking its dependencies (D15): nothing is constructed at
- * import time, so this is usable from a long-running server rather than
- * only from a script.
  */
 import { x402Client } from "@x402/core/client";
 import { wrapFetchWithPayment } from "@x402/fetch";
@@ -18,7 +10,6 @@ import { classify } from "../shared/classify";
 import { Phase, SettlementState } from "../shared/enums";
 
 export type PayerDeps = {
-  /** ACCEPTED, never created — the library does not mint wallets (D13). */
   signer: TransactionSigner;
   chain: { getBlockHeight(): Promise<bigint> };
   /** Payments after a resignable refusal. 0 disables retry. */
@@ -50,12 +41,6 @@ export function createPayer(deps: PayerDeps) {
 
   /**
    * The deadline of the challenge we actually signed against.
-   *
-   * A failed payment gets a FRESH 402 with a new blockhash, so diagnosing
-   * from the response would compare against a deadline we never used and
-   * nothing would ever look expired. This hook fires during selection —
-   * after the 402 arrives, before signing — which is the only moment the
-   * right value is visible.
    */
   let observedDeadline: bigint | undefined;
   client.registerPolicy((_version, requirements) => {

@@ -1,7 +1,7 @@
 /**
- * Durable record of every settlement (D8, D10).
+ * Durable record of every settlement.
  *
- * A factory taking its connection, mirroring createChain (D15): tests pass
+ * A factory taking its connection, mirroring createChain: tests pass
  * PGlite, production passes postgres.js, nothing is stubbed.
  *
  * ORDERING RULE: recordIntent() runs BEFORE the broadcast. Everything else
@@ -46,7 +46,7 @@ export function createLedger(db: Db) {
      *
      * Throws DuplicatePayment if either unique index rejects it — the same
      * signed bytes, or the same payment-identifier for this payer. That is
-     * the D10 idempotency check, enforced by the database rather than by a
+     * the idempotency check, enforced by the database rather than by a
      * read-then-write that two concurrent requests could both pass.
      */
     async recordIntent(input: IntentInput): Promise<SettlementRow> {
@@ -126,7 +126,7 @@ export function createLedger(db: Db) {
     },
 
     /**
-     * Cumulative spend in a window — the actual spend limit (D12).
+     * Cumulative spend in a window — the actual spend limit.
      *
      * A per-payment cap is not a spend limit: an agent capped at 0.01 USDC
      * per payment can spend without bound by paying a thousand times.

@@ -1,7 +1,7 @@
 /**
  * Reads six facts about a mint and classifies each against a stated rule.
  *
- * A factory taking its chain, like everything else (D15), so tests pass a
+ * A factory taking its chain, like everything else, so tests pass a
  * fake RPC and nothing is stubbed at module level.
  */
 import { address, type Address } from "@solana/kit";

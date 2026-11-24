@@ -25,7 +25,7 @@ const ROLES = ["agent", "merchant", "facilitator"] as const;
 /**
  * tools/ is DEMO SCAFFOLDING. loadOrCreateSigner mints a new wallet when the
  * key file is absent — convenient for a demo, wrong in production where a
- * missing key must be a hard failure (D13). Product code loads keys through
+ * missing key must be a hard failure. Product code loads keys through
  * its own role's signer.ts, which reads and never creates.
  */
 const FORBIDDEN: Record<string, readonly string[]> = {

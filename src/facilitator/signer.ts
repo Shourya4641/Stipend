@@ -1,5 +1,5 @@
 /**
- * Where the fee payer comes from (D13).
+ * Where the fee payer comes from.
  *
  * The only key in Stipend that spends SOL unprompted. A public facilitator
  * is a faucet unless this is controlled, so the loader here is deliberately

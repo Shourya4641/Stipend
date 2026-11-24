@@ -31,7 +31,7 @@ export type MerchantDeps = {
   logger?: Logger;
 };
 
-/** Builds the app. Never listens (D5). */
+/** Builds the app. Never listens. */
 export function createApp(deps: MerchantDeps): express.Express {
   const app = express();
   // Behind Railway. Without this every request carries the proxy's IP.

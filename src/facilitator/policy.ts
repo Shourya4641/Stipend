@@ -64,7 +64,7 @@ export function decide(amountAtomic: AtomicAmount, config: PolicyConfig): Policy
  *
  * Pure, like decide(): the caller supplies `spentInWindow` from the ledger.
  * Keeping the IO outside means this is testable with no database, and the
- * route logs the decision rather than this function doing it (D2).
+ * route logs the decision rather than this function doing it.
  *
  * NOT ATOMIC under concurrency. Two payments arriving together can both
  * read the same `spentInWindow`, both pass, and together exceed the cap by

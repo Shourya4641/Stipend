@@ -1,11 +1,9 @@
 /**
- * A stable hash of the terms a payment was made against (D10).
+ * A stable hash of the terms a payment was made against.
  *
  * The comparison it enables comes later: same payment-identifier with a
  * DIFFERENT fingerprint means the client changed the terms under a reused
- * id, which is a 409. Computing it from day one means D10 adds only the
- * check, not a backfill — and avoids a column full of placeholders that
- * would silently match everything against everything.
+ * id, which is a 409.
  *
  * Deliberately excludes: the signature, the memo nonce and the blockhash.
  * All three change when a payment is re-signed, and the whole point is that

@@ -1,7 +1,7 @@
 /**
  * Every chain read in Stipend goes through here.
  *
- * A factory, not a module with top-level state (D15). Nothing is constructed
+ * A factory, not a module with top-level state. Nothing is constructed
  * when you merely import this file, so tests pass a fake `Chain` object
  * instead of stubbing a module — and no process opens a websocket it never
  * uses.

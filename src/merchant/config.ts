@@ -18,12 +18,12 @@ const schema = z.object({
   MERCHANT_PORT: z.coerce.number().int().positive().default(DEFAULTS.MERCHANT_PORT),
   FACILITATOR_URL: z.string().url().default(DEFAULTS.FACILITATOR_URL),
 
-  // A business decision, not a literal in a server file (D14). It changed
+  // A business decision, not a literal in a server file. It changed
   // twice during testing, each time an edit-and-restart.
   /**
    * Where payment lands. An ADDRESS, not a key — the merchant holds nothing
    * it can spend with, and this makes that structural rather than
-   * incidental (D13).
+   * incidental.
    */
   MERCHANT_PAY_TO: z.string().min(32, "a base58 Solana address"),
 
@@ -42,7 +42,7 @@ export type MerchantConfig = {
   /**
    * How long the merchant will wait for settlement. Coupled to Solana's
    * ~60 s blockhash window whether we intend it or not: lower means
-   * abandoning payments that could still land (D14).
+   * abandoning payments that could still land.
    */
   maxTimeoutSeconds: number;
 };

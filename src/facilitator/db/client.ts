@@ -1,5 +1,5 @@
 /**
- * The database connection, as a factory (mirrors createChain, D15).
+ * The database connection, as a factory.
  *
  * Nothing is constructed at import time, so a test passes PGlite and
  * production passes postgres.js with no module stubbing.

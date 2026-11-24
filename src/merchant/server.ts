@@ -1,6 +1,6 @@
 /**
  * Entrypoint. The only file here that reads the environment, constructs real
- * dependencies, or opens a port (D5).
+ * dependencies, or opens a port.
  */
 import { x402ResourceServer, HTTPFacilitatorClient } from "@x402/core/server";
 import { registerExactSvmScheme } from "@x402/svm/exact/server";

@@ -165,7 +165,7 @@ describe("POST /verify", () => {
 
   test("a facilitator failure is 502, not 400", async () => {
     // The request was fine; our dependency was not. The status says which
-    // end broke (D4).
+    // end broke.
     const app = appWith({ verify: (async () => { throw new Error("rpc down"); }) as never });
     const res = await request(app).post("/verify").send(body()).expect(502);
     assert.equal(res.body.error, "upstream_unavailable");
@@ -321,8 +321,7 @@ describe("the ledger and the ordering rule", () => {
     // A client whose response was lost has paid and deserves its receipt;
     // the signature is public on-chain anyway. `replay: true` leaves the
     // MERCHANT to decide whether to release the resource a second time —
-    // that call is not ours (D10; x402 PR #3021 removed a settled-nonce
-    // path for exactly this reason).
+    // that call is not ours.
     const ledger = stubLedger({
       recordIntent: async () => {
         throw new DuplicatePayment({

@@ -1,5 +1,5 @@
 /**
- * Protocol truths, not configuration (D3).
+ * Protocol truths, not configuration.
  *
  * Deliberately NOT env-overridable. `process.env.DEVNET_USDC_MINT` would
  * invite pointing a devnet build at an arbitrary mint with nothing

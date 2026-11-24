@@ -11,11 +11,6 @@ const schema = z.object({
 
   /**
    * How many times the agent may pay again after a resignable refusal.
-   *
-   * Explicit because the old code retried once by accident — written as a
-   * single `if`, with no counter and nothing limiting it. For a
-   * spend-limited wallet an unbounded retry path is the wrong default even
-   * while the code happens to be bounded.
    */
   AGENT_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(1),
 });

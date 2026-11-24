@@ -6,16 +6,11 @@ import {
 } from "./enums";
 
 export { SETTLEMENT_STATES, RESIGNABLE_STATES } from "./enums";
-//! Have a separate file for the storing the enums and types for all the different services.
+
 /**
  * Settlement classification: did this payment reach the chain, and is it
  * safe to sign a replacement?
- *
- * The question that decides everything is "was a signature broadcast",
- * not "what did the error say". Error text is a hint. A signature is a fact.
  */
-
-//! Use enums
 export type Classification = {
   state: SettlementState;
   /** May the payer build and sign a NEW payment for this request, NOW? */
@@ -69,7 +64,6 @@ export function classify(input: ClassifyInput): Classification {
     refusalKind,
   } = input;
 
-  //! Refusal from whom would return the signature as empty?
   // SettleResponse.transaction is a REQUIRED string in @x402/core, so a
   // refusal that never broadcast arrives as "". Normalise here rather than
   // trusting every caller: an empty signature must never read as "broadcast".
@@ -78,7 +72,7 @@ export function classify(input: ClassifyInput): Classification {
   // Branches 1 and 2 require Settle; branch 3 requires a signature. So a
   // verify outcome can only reach Expired or Rejected — Confirmed, Pending
   // and Failed are unreachable by construction. Correct, but emergent:
-  // nothing stated it. A programmer error, so it throws (D4 class 4).
+  // nothing stated it. A programmer error, so it throws.
   if (phase === Phase.Verify && sig) {
     throw new Error("invariant: verify never broadcasts, so it cannot carry a signature");
   }
@@ -111,7 +105,7 @@ export function classify(input: ClassifyInput): Classification {
   // ---- 3. A signature exists. This dominates everything below. -----------
   // Bytes went to the chain. We cannot tell from here whether they landed:
   // the RPC may have failed while the transaction confirmed. The ONLY safe
-  // move is to reconcile against the chain, never to re-sign.  //! How are we reconciling and where are we reconciling?
+  // move is to reconcile against the chain, never to re-sign.   
   //
   // Deliberately placed above the expiry check: an expired-looking error
   // AFTER broadcast does not make re-signing safe.
@@ -140,7 +134,7 @@ export function classify(input: ClassifyInput): Classification {
   // ---- 5. Nothing broadcast, still within the window. --------------------
   // The payment was refused on its merits: wrong amount, missing account,
   // policy veto. Re-signing identical terms produces an identical refusal,
-  // so do not retry automatically — surface it.  //! What happens after it is surfaced? How are we handling post surfacing the scenario?
+  // so do not retry automatically — surface it.  
   // A policy refusal may lapse; a malformed payment never will. Unattributed
   // refusals are treated as terms — the safe default is "do not retry".
   return {
@@ -151,8 +145,6 @@ export function classify(input: ClassifyInput): Classification {
   };
 }
 
-//! This is only getting called in the test .. what other use does this have?
-//! How are we getting the values of onChain parameter here? Are we making some on chain call for it?
 /**
  * Resolve a `pending` classification against the chain.
  *

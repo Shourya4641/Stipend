@@ -50,7 +50,7 @@ export type FacilitatorConfig = {
   policy: PolicyConfig;
 };
 
-/** Called ONCE by the entrypoint. Never at import time (D3). */
+/** Called ONCE by the entrypoint. Never at import time. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): FacilitatorConfig {
   const e = parseEnv("facilitator", schema, env);
 

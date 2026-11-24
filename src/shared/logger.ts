@@ -1,5 +1,5 @@
 /**
- * Structured logging (D2).
+ * Structured logging.
  *
  * Not for prettier output. Log lines are currently strings, and the thing we
  * most need to do with them is QUERY: "show me every payment that reached

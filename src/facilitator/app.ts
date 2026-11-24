@@ -62,7 +62,7 @@ export type FacilitatorDeps = {
 };
 
 /**
- * Builds the app. Never listens — the entrypoint does that (D5).
+ * Builds the app. Never listens — the entrypoint does that.
  *
  * A seam, not a layer. Nothing here is constructed at import time, which is
  * what lets supertest drive these routes with a fake chain and a stub
@@ -74,7 +74,7 @@ export function createApp(deps: FacilitatorDeps): express.Express {
   // Defence in depth only. The route decides BEFORE calling settle (below),
   // so nothing depends on catching this hook's exception any more — which is
   // how a policy decision came to be disguised as an error in the first
-  // place (D4). The hook still fires if the SDK is driven from elsewhere.
+  // place. The hook still fires if the SDK is driven from elsewhere.
   facilitator.onBeforeSettle(async ({ requirements }) => {
     const decision = decide(amountOf(requirements), policy);
     if (decision.allowed) return;
@@ -117,7 +117,7 @@ export function createApp(deps: FacilitatorDeps): express.Express {
       //
       // KNOWN LIMIT: "AlreadyProcessed" lands in rejected — the SAFE answer
       // (do not retry) but not the TRUE one (the money already moved).
-      // Telling those apart needs a ledger keyed by request (D10).
+      // Telling those apart needs a ledger keyed by request.
       // Tell the handler WHICH END broke. Without this an SDK failure is
       // anonymous and answers 500 — "we have a bug" — when the truth is
       // "our dependency is down and your request was fine".
@@ -305,8 +305,7 @@ export function createApp(deps: FacilitatorDeps): express.Express {
         //    public on-chain anyway.
         //
         //    `replay: true` so the MERCHANT decides whether to release the
-        //    resource again; that call is not ours (D10, and x402 PR #3021
-        //    removed a settled-nonce path for exactly this reason).
+        //    resource again; that call is not ours.
         if (err instanceof DuplicatePayment) {
           log.warn({ state: err.existing.state }, "replay of a settled payment");
           await reply({

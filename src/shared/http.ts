@@ -1,5 +1,5 @@
 /**
- * Route plumbing shared by the facilitator and merchant (D4).
+ * Route plumbing shared by the facilitator and merchant.
  */
 import type { NextFunction, Request, Response } from "express";
 import type { z } from "zod";
@@ -9,10 +9,6 @@ import { silentLogger, type Logger } from "./logger";
 
 /**
  * Validate the body and hand the handler a TYPED third argument.
- *
- * Not `app.post(path, validate(schema), handler)` — stashing the result on
- * `req.validated` cannot be typed without augmenting Express's Request
- * globally, which forces a cast and breaks D6.
  *
  * A rejected promise goes to Express 5's error middleware automatically.
  * Express 4 did not do this, which is why every tutorial wraps handlers in

@@ -3,7 +3,7 @@
 #   docker compose up -d
 #   pnpm db:migrate
 #
-# Services are NOT here yet (D16): they still change every session and
+# Services are NOT here yet: they still change every session and
 # rebuilding images on each edit would slow development for no gain. They
 # join before submission, so `docker compose up` starts everything.
 #
